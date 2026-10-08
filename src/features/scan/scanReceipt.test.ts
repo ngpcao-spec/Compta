@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { scanReceipt, type InvokeResult, type ScanDeps } from './scanReceipt';
 
 const cats = [
-  { id: 'c-an', name: 'Ăn uống' },
-  { id: 'c-khac', name: 'Khác' },
+  { id: 'c-an', name: 'Ăn uống', type: 'expense' as const },
+  { id: 'c-khac', name: 'Khác', type: 'expense' as const },
 ];
 const TODAY = '2026-10-08';
 const ok = {
+  doc_kind: 'invoice',
+  tx_type: 'expense',
   amount: 250000,
   date: '2026-10-07',
   category_id: 'c-an',

@@ -112,3 +112,19 @@ Constat sur une vraie facture (MM Mega Market, « Thành tiền 1.020.331đ — 
 - **Note** : le champ `merchant` du schéma est conservé (compatibilité avec la fonction déployée et les tests) mais sert de libellé de note : commerçant visible, sinon numéro de facture, sinon type d'achat, sinon `null`.
 - **Limite des tests** : aucun appel OpenAI n'est possible depuis la session. Les tests vérifient le contenu du prompt, le schéma, la validation serveur et la normalisation client sur une réponse simulée qui reproduit cette facture ; le choix réel de la catégorie par le modèle est à confirmer en rescannant la facture MM Mega Market.
 
+## 2026-10-08 — Scan : notifications bancaires et e-wallet
+
+Cas réel qui échouait : SMS « NamABank: TK 4010…0007 nop 3.500.000VND luc 21:36 07/10/2026. So du 3.617.661VND. ND: CAO MINH NHAN Chuyen tien » (message « Không đọc được hóa đơn »). Attendu : revenu de 3 500 000 le 07/10/2026.
+
+- **Envoi des deux listes de catégories** : le corps de la requête garde le tableau `categories` mais chaque entrée porte maintenant `type` (`expense` | `income`) ; le message envoyé à OpenAI contient deux sections « Expense categories » et « Income categories ». Un client plus ancien (sans `type`) reste servi : tout est traité en dépense, ce qui permet de déployer la fonction avant le client.
+- **Schéma de sortie** : `doc_kind` (`invoice` | `bank_notification` | `other`) et `tx_type` (`expense` | `income`), en énumérations strictes, ajoutés aux champs existants (le champ `merchant` reste le libellé de la note, `vat_included` ne concerne que les factures).
+- **Garde-fous côté serveur, indépendants du modèle** (la validation est partagée avec le client) :
+  - `doc_kind = other` (ni facture ni notification, plusieurs transactions…) ou valeur inconnue → réponse 422 `unreadable`, rien n'est enregistré, message d'échec habituel. Même si le modèle donne un montant et une confiance élevés.
+  - Une facture est toujours une dépense, même si le modèle répond `income`. Pour une notification, un sens absent ou invalide n'est pas deviné → rien n'est enregistré.
+  - La catégorie doit appartenir à la liste du type détecté, sinon catégorie de secours de ce type : `Khác` (dépense) ou `Thu nhập khác` (revenu).
+  - **Numéros de compte** : le prompt les interdit dans la note, et un nettoyage défensif (`stripAccountNumbers`) retire des notes de notification toute suite de 4 chiffres ou plus, les masques type `****0007` / `4010…0007` et les libellés « TK / STK / thẻ / card » qui les précèdent. Il n'est pas appliqué aux factures (le numéro de facture est une note légitime). Conséquence assumée : un nombre de 4 chiffres ou plus dans le contenu du virement (ex. une année) est aussi retiré.
+- **Client** : le type détecté prime sur l'onglet ouvert (la transaction prend de toute façon son type de sa catégorie) ; en saisie manuelle (confiance < 0,5) l'onglet bascule sur le type détecté, sinon il reste inchangé. Toast d'un revenu : « Đã thêm thu nhập … vào … » (+ « Sửa »). Message d'échec : « Không đọc được hóa đơn hoặc giao dịch, vui lòng kiểm tra ».
+- **Boutons dans l'onglet Thu nhập** : ils étaient déjà affichés dans les deux onglets (même écran) ; ils sont désormais aussi couverts par un test e2e et alimentés avec les catégories des deux types.
+- **Heure du message** : lue par l'IA mais non conservée (une transaction n'a qu'une date, SPEC §3).
+- **Limite des tests** : aucun appel OpenAI possible depuis la session ; les tests simulent la réponse que le modèle devrait donner pour chaque cas (SMS NamABank, SMS de débit, capture MoMo, plusieurs transactions) et vérifient le prompt, le schéma et les garde-fous. La lecture réelle du SMS NamABank est à confirmer en le rescannant.
+

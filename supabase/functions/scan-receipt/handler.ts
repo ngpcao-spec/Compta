@@ -63,7 +63,10 @@ function parseBody(body: unknown): Parsed | null {
       r.name.length > 60
     )
       return null;
-    categories.push({ id: r.id, name: r.name });
+    // clients d'avant les revenus : pas de type = dépense
+    const type = r.type === undefined ? 'expense' : r.type;
+    if (type !== 'expense' && type !== 'income') return null;
+    categories.push({ id: r.id, name: r.name, type });
   }
   const base64 = b.image_base64.replace(/^data:[^;]+;base64,/, '');
   return { base64, mime, categories };

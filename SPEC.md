@@ -20,7 +20,7 @@ Les maquettes de référence sont dans `docs/mockups/` (5 captures : catégories
 9. Fonctionnement hors ligne complet après première connexion, synchronisation automatique.
 10. Installation PWA (Android + iOS), mise à jour avec bandeau.
 11. Écran « Thêm » (Plus) : catégories, export CSV, déconnexion, suppression du compte.
-12. Scan d'une facture par IA qui crée une dépense (§3.10).
+12. Scan d'une facture ou d'une notification bancaire par IA qui crée une transaction (§3.10).
 
 ### Exclus (v1)
 - Premium / abonnement (l'icône couronne des maquettes n'est **pas** affichée).
@@ -136,22 +136,23 @@ Dans l'écran de saisie (`/tx/new`), deux boutons côte à côte, de même large
 **Comportement**
 
 - L'IA lit la facture et crée **une seule dépense** : montant total à payer, catégorie dominante, date de la facture.
+- **Notifications bancaires / e-wallet** (SMS de banque, captures MoMo, ZaloPay, appli bancaire) : le scan les accepte aussi et crée **une seule transaction, dépense ou revenu** ; le sens détecté par l'IA **prime sur l'onglet ouvert** (revenu détecté depuis `Chi tiêu` → revenu enregistré). Sens : `nop`, `+`, `ghi có`, `nhận`, `GD: +` = revenu ; `rut`, `-`, `ghi nợ`, `chuyển đi`, `thanh toán`, `GD: -` = dépense. Le montant est celui de la transaction, **jamais le solde** (`So du`, `Số dư`, `SD`) ; la date est celle du message ; la note est le contenu du virement (`ND`) et le nom de la contrepartie, **sans numéro de compte ni de carte** (aussi retiré côté serveur). Catégorie prise dans la liste du type détecté : un virement de salaire va en `Lương`, sinon en catégorie de secours du type (`Khác` pour une dépense, `Thu nhập khác` pour un revenu). Toast d'un revenu : `Đã thêm thu nhập 3,500,000 vào Lương` (avec `Sửa`). Les boutons de scan figurent aussi dans l'onglet `Thu nhập`.
 - **Enregistrement direct, sans écran de vérification** : la transaction passe par le repository habituel (Dexie, `_dirty = 1`, synchro normale). Un toast `Đã thêm 250,000 vào Ăn uống` propose un bouton `Sửa` qui ouvre `/tx/:id`.
 - Date absente, future ou de plus d'un an → aujourd'hui. La note (100 caractères max) est le nom du commerçant s'il est visible, sinon le numéro de facture (`HĐ #ISR06000025498`), sinon le type d'achat (`Cash & Carry`).
 - **TVA** : si la facture affiche un total TTC (`Tổng thanh toán`, `đã bao gồm VAT`), c'est lui qui est pris. Si elle indique explicitement `chưa bao gồm VAT` sans total TTC, le montant lu est gardé, la note est préfixée `(chưa VAT)` et le toast devient `Đã thêm … — số tiền chưa gồm VAT, kiểm tra lại` (avec `Sửa`). Aucun montant de TVA n'est jamais inventé.
 - **Catégorie** : choisie d'après les articles (et non le type de magasin) : celle qui pèse le plus en montant ; l'alimentaire (même en supermarché ou grossiste) va en `Ăn uống`, `Mua sắm` est réservé aux achats non alimentaires dominants. Capture tronquée : on décide sur les lignes visibles.
 - Pendant l'analyse : voile `Đang đọc hóa đơn…`, annulable (`Hủy`).
 - Hors ligne : bouton désactivé, message `Cần kết nối mạng để quét hóa đơn`.
-- Échec de la fonction, montant illisible ou confiance < 0,5 : **rien n'est enregistré** ; la saisie manuelle s'ouvre pré-remplie avec ce qui a été lu, avec le message `Không đọc được hóa đơn, vui lòng kiểm tra`. Quota atteint : message dédié (`Đã hết 30 lượt quét hôm nay…`), même saisie manuelle.
+- Échec de la fonction, montant illisible ou confiance < 0,5 : **rien n'est enregistré** ; la saisie manuelle s'ouvre pré-remplie avec ce qui a été lu, avec le message `Không đọc được hóa đơn hoặc giao dịch, vui lòng kiểm tra`. C'est aussi le cas si le document n'est ni une facture ni une notification bancaire, ou s'il contient **plusieurs transactions**. Quota atteint : message dédié (`Đã hết 30 lượt quét hôm nay…`), même saisie manuelle.
 
 **Confidentialité** : la photo n'est jamais conservée (ni Storage, ni base, ni journaux, `store: false` côté OpenAI) ; elle est compressée sur l'appareil (côté le plus long 1600 px, JPEG qualité 0,8), analysée, puis oubliée.
 
 **Architecture**
 
 - La clé OpenAI reste **uniquement côté serveur** : Edge Function Supabase `scan-receipt` (secrets `OPENAI_API_KEY`, `OPENAI_MODEL`, optionnel `OPENAI_REASONING_EFFORT`).
-- Entrée : JWT de l'utilisateur, image en base64 (5 Mo décodés max), liste des catégories de dépense actives (`id`, `nom`).
-- Appel de l'API OpenAI Responses avec Structured Outputs (schéma strict) : `{ amount: integer VND, date: "YYYY-MM-DD" | null, category_id: string, merchant: string | null, confidence: 0..1 }`.
-- Validation serveur : montant > 0 ; `category_id` dans la liste, sinon la catégorie `Khác` ; date ni future ni vieille de plus d'un an (sinon `null`).
+- Entrée : JWT de l'utilisateur, image en base64 (5 Mo décodés max), les catégories actives de **dépense et de revenu**, chacune avec son `type` (`id`, `nom`, `type`).
+- Appel de l'API OpenAI Responses avec Structured Outputs (schéma strict) : `{ doc_kind: "invoice" | "bank_notification" | "other", tx_type: "expense" | "income", amount: integer VND, date: "YYYY-MM-DD" | null, category_id: string, merchant: string | null, vat_included: boolean | null, confidence: 0..1 }`.
+- Validation serveur : `doc_kind` ≠ `other` ; une facture est toujours une dépense ; pour une notification le sens doit être explicite ; montant > 0 ; `category_id` dans la liste **du type détecté**, sinon la catégorie de secours de ce type (`Khác` / `Thu nhập khác`) ; date ni future ni vieille de plus d'un an (sinon `null`).
 - Quota : 30 scans par utilisateur sur 24 h glissantes, table `receipt_scans (user_id, created_at)` protégée par RLS (lecture de ses propres lignes, écriture par la clé service uniquement).
 - Codes de réponse : 401 non authentifié, 400 requête invalide, 413 image trop lourde, 422 facture illisible, 429 quota, 502 erreur OpenAI ou réponse invalide, 500 non configuré.
 

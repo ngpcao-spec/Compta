@@ -4,13 +4,20 @@ import {
   MERCHANT_MAX,
   normalizeAmount,
   normalizeDate,
+  normalizeDocKind,
   normalizeMerchant,
+  normalizeTxType,
   resolveCategory,
   validateScan,
   type CategoryRef,
+  type DocKind,
+  type TxKind,
 } from '../../../supabase/functions/scan-receipt/validate';
 
 export interface Draft {
+  /** sens détecté par l'IA : prime sur l'onglet ouvert */
+  txType: TxKind;
+  docKind: DocKind;
   amount: number;
   /** YYYY-MM-DD ; aujourd'hui si la facture n'en donne pas */
   date: string;
@@ -24,6 +31,8 @@ export interface Draft {
 
 /** Ce qui a pu être lu, pour pré-remplir la saisie manuelle. */
 export interface Prefill {
+  /** sens détecté, s'il est connu (sinon l'onglet ouvert est conservé) */
+  type?: TxKind;
   amount?: number;
   date: string;
   categoryId?: string;
@@ -54,6 +63,8 @@ export function interpretScan(
     return {
       kind: 'ready',
       draft: {
+        txType: result.tx_type,
+        docKind: result.doc_kind,
         amount: result.amount,
         date: result.date ?? today,
         categoryId: result.category_id,
@@ -64,15 +75,24 @@ export function interpretScan(
     };
   }
   const r = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
+  const kind = normalizeDocKind(r.doc_kind);
+  // « other » : rien d'exploitable (pas une facture, plusieurs transactions…) → saisie vide
+  if (kind === null) return { kind: 'manual', prefill: { date: today, note: '' } };
+  // sens connu seulement si la réponse en parle : sinon on garde l'onglet ouvert
+  const type =
+    kind === 'bank_notification' || typeof r.tx_type === 'string'
+      ? (normalizeTxType(r.tx_type, kind) ?? undefined)
+      : undefined;
   return {
     kind: 'manual',
     prefill: {
+      type,
       amount: normalizeAmount(r.amount) ?? undefined,
       date: normalizeDate(r.date, today) ?? today,
-      // « Khác » seulement si l'IA a bien proposé une catégorie (inconnue) ; sinon rien de présélectionné.
+      // catégorie de secours seulement si l'IA a bien proposé une catégorie (inconnue) ; sinon rien de présélectionné.
       categoryId:
         typeof r.category_id === 'string'
-          ? (resolveCategory(r.category_id, categories) ?? undefined)
+          ? (resolveCategory(r.category_id, categories, type ?? 'expense') ?? undefined)
           : undefined,
       note: normalizeMerchant(r.merchant) ?? '',
     },

@@ -71,6 +71,11 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
   const [error, setError] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const expenseCategories = useCategories('expense');
+  const incomeCategories = useCategories('income');
+  const scanCategories = useMemo(
+    () => [...(expenseCategories ?? []), ...(incomeCategories ?? [])],
+    [expenseCategories, incomeCategories],
+  );
 
   const activeQ = useCategories(type);
   const archivedQ = useCategories(type, true);
@@ -102,7 +107,7 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
 
   /** Scan raté ou douteux : saisie manuelle pré-remplie avec ce qui a été lu. */
   const applyPrefill = (p: Prefill, message: string) => {
-    setType('expense');
+    if (p.type) setType(p.type);
     setCategoryId(p.categoryId ?? null);
     setExpr(p.amount ? String(p.amount) : '');
     setNote(p.note);
@@ -161,7 +166,7 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
         {!editing && (
           <div className="mb-5 px-1">
             <ScanReceiptButton
-              categories={expenseCategories ?? []}
+              categories={scanCategories}
               onManual={applyPrefill}
               onError={setScanMessage}
               onDone={goBack}
