@@ -1,3 +1,4 @@
+import { readJpegInfo } from './image';
 import type { InvokeResult, ScanPayload } from './scanReceipt';
 
 /**
@@ -21,6 +22,14 @@ export async function fakeScan(payload: ScanPayload, signal: AbortSignal): Promi
       reject(new DOMException('annulé', 'AbortError'));
     });
   });
+  // le test relit les dimensions de l'image réellement envoyée (compression, orientation)
+  const bin = atob(payload.image_base64.slice(0, 200_000));
+  const head = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  const info = readJpegInfo(head);
+  localStorage.setItem(
+    'stc.e2e.scan.last',
+    JSON.stringify({ width: info?.width ?? 0, height: info?.height ?? 0 }),
+  );
   if (cfg.kind === 'quota') return { ok: false, error: 'quota_exceeded' };
   if (cfg.kind === 'error') return { ok: false, error: 'upstream_error' };
   const cat = payload.categories.find((c) => c.name === cfg.categoryName) ?? payload.categories[0];

@@ -163,6 +163,7 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
             <ScanReceiptButton
               categories={expenseCategories ?? []}
               onManual={applyPrefill}
+              onError={setScanMessage}
               onDone={goBack}
             />
           </div>

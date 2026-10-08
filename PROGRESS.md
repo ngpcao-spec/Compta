@@ -38,6 +38,8 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 - Secrets : `OPENAI_API_KEY` à poser par l'utilisateur dans Supabase (Edge Functions → Secrets) ; `OPENAI_MODEL` facultatif (défaut `gpt-5.4-mini`). La fonction répond `not_configured` tant que la clé manque.
 - Aperçu Vercel de la branche, à tester sur iPhone : https://so-thu-chi-git-claude-ecstatic-johnson-9kiz30-vietgolf.vercel.app (protégé : connexion Vercel requise). Prérequis OAuth : ajouter `https://so-thu-chi-git-*-vietgolf.vercel.app/**` aux Redirect URLs de Supabase, sinon la connexion Google renvoie vers la production.
 
+- **Correctif « deux boutons »** (même branche, nouvelle PR vers `main`, non fusionnée) : `Chụp ảnh` (caméra) + `Thư viện ảnh` (bibliothèque, sans `capture`) ; décodage robuste (repli `<img>` pour HEIC, orientation EXIF, 12 Mpx, PNG hauts, image illisible → `Không đọc được ảnh này`). Tests unitaires et e2e ajoutés ; `npm run check` et les 40 e2e passent. À constater sur iPhone : choix d'une photo HEIC de la bibliothèque. Détails dans `DECISIONS.md`.
+
 ## Vérifié en production (https://so-thu-chi-vietgolf.vercel.app, projet Supabase `Compta`)
 
 - Connexion Google (client OAuth dédié « Sổ Thu Chi ») : OK sur iPhone ; création automatique du profil + 35 dépenses + 5 revenus.

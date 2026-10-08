@@ -60,9 +60,24 @@ describe('scanReceipt', () => {
         throw new Error('canvas');
       },
     };
+    // image illisible (HEIC non décodable, fichier corrompu…) : message dédié, pas de saisie manuelle
     expect(
       await scanReceipt(new Blob(['x']), cats, TODAY, new AbortController().signal, broken),
-    ).toMatchObject({ kind: 'failed' });
+    ).toEqual({ kind: 'image_error' });
+  });
+
+  it('image illisible + annulation → cancelled', async () => {
+    const ctrl = new AbortController();
+    const broken: ScanDeps = {
+      ...deps(async () => ({ ok: false, error: 'upstream_error' })),
+      compress: async () => {
+        ctrl.abort();
+        throw new Error('canvas');
+      },
+    };
+    expect(await scanReceipt(new Blob(['x']), cats, TODAY, ctrl.signal, broken)).toEqual({
+      kind: 'cancelled',
+    });
   });
 
   it('annulation : aucun résultat n’est exploité', async () => {

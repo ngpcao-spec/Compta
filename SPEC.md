@@ -131,7 +131,7 @@ Routes : `/`, `/charts`, `/trend`, `/tx/new`, `/tx/:id`, `/more`, `/more/categor
 
 ### 3.10 Scan de facture (IA)
 
-Dans l'écran de saisie (`/tx/new`), un bouton `Quét hóa đơn` (icône appareil photo) apparaît en haut de la liste des catégories (absent en édition d'une transaction existante). Il ouvre l'appareil photo, ou la galerie, via `<input type="file" accept="image/*" capture="environment">`.
+Dans l'écran de saisie (`/tx/new`), deux boutons côte à côte, de même largeur (contour bleu), apparaissent en haut de la liste des catégories (absents en édition d'une transaction existante) : `Chụp ảnh` (icône appareil photo) ouvre directement l'appareil photo via `<input type="file" accept="image/*" capture="environment">` ; `Thư viện ảnh` (icône image) ouvre la photothèque via `<input type="file" accept="image/*">` **sans** `capture`. Les photos de la bibliothèque (HEIC, captures PNG, 12 Mpx et plus, orientation EXIF) passent par la même compression ; une image illisible affiche `Không đọc được ảnh này` sans rien enregistrer.
 
 **Comportement**
 

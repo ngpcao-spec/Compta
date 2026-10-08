@@ -70,6 +70,11 @@ export const vi = {
   },
   scan: {
     button: 'Quét hóa đơn',
+    camera: 'Chụp ảnh',
+    library: 'Thư viện ảnh',
+    cameraLabel: 'Chụp ảnh hóa đơn bằng camera',
+    libraryLabel: 'Chọn ảnh hóa đơn từ thư viện ảnh',
+    badImage: 'Không đọc được ảnh này',
     offline: 'Cần kết nối mạng để quét hóa đơn',
     reading: 'Đang đọc hóa đơn…',
     cancel: 'Hủy',
