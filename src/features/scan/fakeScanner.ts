@@ -13,6 +13,7 @@ export async function fakeScan(payload: ScanPayload, signal: AbortSignal): Promi
     date?: string | null;
     categoryName?: string;
     merchant?: string | null;
+    vatIncluded?: boolean | null;
     confidence?: number;
   };
   await new Promise<void>((resolve, reject) => {
@@ -40,6 +41,7 @@ export async function fakeScan(payload: ScanPayload, signal: AbortSignal): Promi
       date: cfg.date ?? null,
       category_id: cat?.id ?? '',
       merchant: cfg.merchant ?? null,
+      vat_included: cfg.vatIncluded ?? null,
       confidence: cfg.confidence ?? 0.9,
     },
   };

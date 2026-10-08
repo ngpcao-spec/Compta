@@ -10,7 +10,10 @@ export interface ScanResult {
   /** YYYY-MM-DD, ni future ni plus vieille d'un an ; sinon null */
   date: string | null;
   category_id: string;
+  /** Libellé de la note : commerçant, sinon numéro de facture, sinon type d'achat (≤ 100 car.) */
   merchant: string | null;
+  /** true : total TTC ; false : la facture dit explicitement « chưa bao gồm VAT » ; null : inconnu */
+  vat_included: boolean | null;
   /** 0..1 */
   confidence: number;
 }
@@ -21,6 +24,8 @@ export const FALLBACK_CATEGORY_NAME = 'Khác';
 export const MAX_AMOUNT = 9_999_999_999_999;
 export const MERCHANT_MAX = 100;
 export const CONFIDENCE_MIN = 0.5;
+/** Préfixe de la note quand la facture indique un montant hors TVA. */
+export const NO_VAT_PREFIX = '(chưa VAT)';
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -91,6 +96,7 @@ export function validateScan(
     date: normalizeDate(r.date, today),
     category_id,
     merchant: normalizeMerchant(r.merchant),
+    vat_included: typeof r.vat_included === 'boolean' ? r.vat_included : null,
     confidence: normalizeConfidence(r.confidence),
   };
 }

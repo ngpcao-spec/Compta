@@ -36,6 +36,7 @@ function makeDeps(over: Partial<Deps> = {}): Deps & { calls: { fetch: number; re
         date: '2026-10-07',
         category_id: 'c-an',
         merchant: 'Phở 24',
+        vat_included: true,
         confidence: 0.92,
       }));
   const deps: Deps = {
@@ -81,6 +82,7 @@ describe('scan-receipt : réponse valide', () => {
         date: '2026-10-07',
         category_id: 'c-an',
         merchant: 'Phở 24',
+        vat_included: true,
         confidence: 0.92,
       },
     });
@@ -116,8 +118,10 @@ describe('scan-receipt : réponse valide', () => {
       'date',
       'category_id',
       'merchant',
+      'vat_included',
       'confidence',
     ]);
+    expect(body.text.format.schema.properties.vat_included).toEqual({ type: ['boolean', 'null'] });
     expect(body.input[0]).toEqual({ role: 'system', content: SYSTEM_PROMPT });
     const user = body.input[1].content;
     expect(user[0].text).toContain('c-an: Ăn uống');
@@ -324,6 +328,37 @@ describe('scan-receipt : entrées', () => {
     expect((await handleScan(new Request('https://x.test/', { method: 'GET' }), deps)).status).toBe(
       405,
     );
+  });
+});
+
+describe('prompt système', () => {
+  it('donne les règles TVA, catégorie par articles et note de repli', () => {
+    expect(SYSTEM_PROMPT).toMatch(/vat_included = true/);
+    expect(SYSTEM_PROMPT).toMatch(/chưa bao gồm VAT/);
+    expect(SYSTEM_PROMPT).toMatch(/vat_included = false/);
+    expect(SYSTEM_PROMPT).toMatch(/Never invent or compute a VAT amount/);
+    expect(SYSTEM_PROMPT).toMatch(/not from the type of shop/);
+    expect(SYSTEM_PROMPT).toMatch(/Ăn uống/);
+    expect(SYSTEM_PROMPT).toMatch(/Mua sắm/);
+    expect(SYSTEM_PROMPT).toMatch(/cropped/);
+    expect(SYSTEM_PROMPT).toMatch(/invoice number/);
+    expect(SYSTEM_PROMPT).toMatch(/Cash & Carry/);
+  });
+
+  it('la sortie hors TVA de l’IA traverse la fonction telle quelle', async () => {
+    const deps = makeDeps({
+      fetchOpenAI: async () =>
+        openAiReply({
+          amount: 1020331,
+          date: null,
+          category_id: 'c-an',
+          merchant: 'HĐ #ISR06000025498',
+          vat_included: false,
+          confidence: 0.85,
+        }),
+    });
+    const res = await handleScan(request(valid), deps);
+    expect(await res.json()).toMatchObject({ ok: true, result: { vat_included: false } });
   });
 });
 

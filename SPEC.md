@@ -137,7 +137,9 @@ Dans l'écran de saisie (`/tx/new`), deux boutons côte à côte, de même large
 
 - L'IA lit la facture et crée **une seule dépense** : montant total à payer, catégorie dominante, date de la facture.
 - **Enregistrement direct, sans écran de vérification** : la transaction passe par le repository habituel (Dexie, `_dirty = 1`, synchro normale). Un toast `Đã thêm 250,000 vào Ăn uống` propose un bouton `Sửa` qui ouvre `/tx/:id`.
-- Date absente, future ou de plus d'un an → aujourd'hui. Le nom du marchand va en note (100 caractères max).
+- Date absente, future ou de plus d'un an → aujourd'hui. La note (100 caractères max) est le nom du commerçant s'il est visible, sinon le numéro de facture (`HĐ #ISR06000025498`), sinon le type d'achat (`Cash & Carry`).
+- **TVA** : si la facture affiche un total TTC (`Tổng thanh toán`, `đã bao gồm VAT`), c'est lui qui est pris. Si elle indique explicitement `chưa bao gồm VAT` sans total TTC, le montant lu est gardé, la note est préfixée `(chưa VAT)` et le toast devient `Đã thêm … — số tiền chưa gồm VAT, kiểm tra lại` (avec `Sửa`). Aucun montant de TVA n'est jamais inventé.
+- **Catégorie** : choisie d'après les articles (et non le type de magasin) : celle qui pèse le plus en montant ; l'alimentaire (même en supermarché ou grossiste) va en `Ăn uống`, `Mua sắm` est réservé aux achats non alimentaires dominants. Capture tronquée : on décide sur les lignes visibles.
 - Pendant l'analyse : voile `Đang đọc hóa đơn…`, annulable (`Hủy`).
 - Hors ligne : bouton désactivé, message `Cần kết nối mạng để quét hóa đơn`.
 - Échec de la fonction, montant illisible ou confiance < 0,5 : **rien n'est enregistré** ; la saisie manuelle s'ouvre pré-remplie avec ce qui a été lu, avec le message `Không đọc được hóa đơn, vui lòng kiểm tra`. Quota atteint : message dédié (`Đã hết 30 lượt quét hôm nay…`), même saisie manuelle.

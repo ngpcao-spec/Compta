@@ -18,6 +18,7 @@ const raw = (over: Record<string, unknown> = {}) => ({
   date: '2026-10-05',
   category_id: 'c-an',
   merchant: 'Highlands Coffee',
+  vat_included: true,
   confidence: 0.9,
   ...over,
 });
@@ -29,8 +30,17 @@ describe('validateScan', () => {
       date: '2026-10-05',
       category_id: 'c-an',
       merchant: 'Highlands Coffee',
+      vat_included: true,
       confidence: 0.9,
     });
+  });
+
+  it('vat_included : booléen conservé, tout le reste → null', () => {
+    expect(validateScan(raw({ vat_included: false }), cats, TODAY)?.vat_included).toBe(false);
+    expect(validateScan(raw({ vat_included: true }), cats, TODAY)?.vat_included).toBe(true);
+    for (const v of [null, undefined, 'false', 0, 1, {}]) {
+      expect(validateScan(raw({ vat_included: v }), cats, TODAY)?.vat_included).toBeNull();
+    }
   });
 
   it('arrondit le montant et refuse les montants illisibles', () => {
