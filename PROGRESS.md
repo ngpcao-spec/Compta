@@ -3,7 +3,7 @@
 | Jalon | État | Notes |
 |---|---|---|
 | M0 | ✅ | Scaffold, PWA, CI. Vercel : non fait (voir « Points ouverts ») |
-| M1 | ⏳ | |
+| M1 | ✅ | Migration + tests SQL (PGlite). Projet Supabase distant non créé (coût) : migrations non appliquées, edge function non déployée |
 | M2 | ⏳ | |
 | M3 | ⏳ | |
 | M4 | ⏳ | |
