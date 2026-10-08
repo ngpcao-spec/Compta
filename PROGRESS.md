@@ -28,11 +28,13 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 - Protection Vercel : limitée aux aperçus (la production doit être publique pour l'app et le retour OAuth).
 - Branche de production : la seule branche du dépôt est `claude/ecstatic-johnson-9kiz30` ; créer `main` et la définir comme branche par défaut avant de fusionner.
 
-## Points ouverts (actions humaines)
-1. **Google OAuth** : créer le client (SETUP.md §2) avec
-   - URI de redirection : `https://jtiepqlakyyraimjiikw.supabase.co/auth/v1/callback`
-   - origines JavaScript : `http://localhost:5173` et `https://so-thu-chi-vietgolf.vercel.app`,
-   puis activer Google dans Supabase (Authentication → Providers) avec l'ID client et le secret.
-2. **Supabase → Authentication → URL Configuration** : Site URL = `https://so-thu-chi-vietgolf.vercel.app` ; Redirect URLs = `http://localhost:5173/**` et `https://so-thu-chi-vietgolf.vercel.app/**`.
-3. **OAuth iOS standalone** : à vérifier sur un iPhone après déploiement et à consigner dans `DECISIONS.md`.
-4. **Réseau de l'environnement cloud** : `*.supabase.co` et `*.vercel.app` sont refusés par le proxy, donc aucun test en direct depuis la session (les MCP fonctionnent).
+## Vérifié en production (https://so-thu-chi-vietgolf.vercel.app, projet Supabase `Compta`)
+- Connexion Google (client OAuth dédié « Sổ Thu Chi ») : OK sur iPhone ; création automatique du profil + 35 dépenses + 5 revenus.
+- Saisie en ligne : transaction reçue par le serveur en ~2 s.
+- Mode avion : transaction créée hors ligne, envoyée automatiquement 22 s plus tard au retour du réseau, horodatage client conservé, aucun doublon.
+
+## Points ouverts
+1. **Installation iPhone (PWA)** : ajouter à l'écran d'accueil et vérifier que la session Google est conservée au lancement depuis l'icône ; consigner le résultat dans `DECISIONS.md` (point de vigilance SPEC §9).
+2. **Branche par défaut** : le dépôt n'a que `claude/ecstatic-johnson-9kiz30` ; créer `main` et la définir par défaut avant de fusionner (la production Vercel suit la branche de production du projet).
+3. **Sauvegarde de la clé Google** : le secret du client OAuth n'est plus consultable dans Google Cloud ; il ne vit que dans Supabase.
+4. **Réseau de l'environnement cloud** : `*.supabase.co` et `*.vercel.app` sont refusés par le proxy (les tests en direct se font depuis l'appareil de l'utilisateur).
