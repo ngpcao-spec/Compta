@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Camera } from 'lucide-react';
+import { Camera, Image as ImageIcon } from 'lucide-react';
 import { useAmountText } from '@/components/Money';
 import { useToast } from '@/components/Toast';
 import type { Category } from '@/db/types';
@@ -18,17 +18,31 @@ interface Props {
   categories: readonly Category[];
   /** échec ou doute : ouvrir la saisie manuelle pré-remplie, avec ce message */
   onManual: (prefill: Prefill, message: string) => void;
+  /** image illisible (HEIC non décodable, fichier corrompu…) : message, rien n'est enregistré */
+  onError: (message: string) => void;
   /** transaction enregistrée : quitter l'écran de saisie */
   onDone: () => void;
 }
 
+const SOURCES = [
+  { key: 'camera', Icon: Camera, label: vi.scan.camera, aria: vi.scan.cameraLabel, capture: true },
+  {
+    key: 'library',
+    Icon: ImageIcon,
+    label: vi.scan.library,
+    aria: vi.scan.libraryLabel,
+    capture: false,
+  },
+] as const;
+
 /** « Quét hóa đơn » : photo → IA → une dépense enregistrée directement (SPEC §3.10). */
-export function ScanReceiptButton({ categories, onManual, onDone }: Props) {
+export function ScanReceiptButton({ categories, onManual, onError, onDone }: Props) {
   const online = useOnline();
   const toast = useToast();
   const navigate = useNavigate();
   const amountText = useAmountText();
-  const input = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const libraryInput = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,6 +58,10 @@ export function ScanReceiptButton({ categories, onManual, onDone }: Props) {
     setBusy(false);
 
     if (out.kind === 'cancelled') return;
+    if (out.kind === 'image_error') {
+      onError(vi.scan.badImage);
+      return;
+    }
     if (out.kind === 'failed') {
       onManual(out.prefill, out.reason === 'quota' ? vi.scan.quota(DAILY_LIMIT) : vi.scan.failed);
       return;
@@ -74,36 +92,47 @@ export function ScanReceiptButton({ categories, onManual, onDone }: Props) {
     }
   };
 
+  const disabled = !online || busy || categories.length === 0;
+
   return (
     <div>
-      <button
-        type="button"
-        disabled={!online || busy || categories.length === 0}
-        onClick={() => input.current?.click()}
-        data-testid="scan-receipt"
-        className="tap flex h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-primary bg-white font-semibold text-primary disabled:border-divider disabled:text-muted"
-      >
-        <Camera size={20} />
-        {vi.scan.button}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        {SOURCES.map(({ key, Icon, label, aria, capture }) => (
+          <div key={key}>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => (capture ? cameraInput : libraryInput).current?.click()}
+              aria-label={aria}
+              data-testid={`scan-${key}`}
+              className="tap flex h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-primary bg-white font-semibold text-primary disabled:border-divider disabled:text-muted"
+            >
+              <Icon size={20} aria-hidden />
+              {label}
+            </button>
+            <input
+              ref={capture ? cameraInput : libraryInput}
+              type="file"
+              accept="image/*"
+              capture={capture ? 'environment' : undefined}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+              data-testid={`scan-${key}-input`}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = ''; // permet de rescanner le même fichier
+                if (file) void run(file);
+              }}
+            />
+          </div>
+        ))}
+      </div>
       {!online && (
         <p className="mt-1.5 text-center text-[13px] text-muted" data-testid="scan-offline">
           {vi.scan.offline}
         </p>
       )}
-      <input
-        ref={input}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        data-testid="scan-input"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = ''; // permet de rescanner le même fichier
-          if (file) void run(file);
-        }}
-      />
       {busy && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-8"

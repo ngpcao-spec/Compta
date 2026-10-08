@@ -19,6 +19,8 @@ export interface ScanDeps {
 export type ScanOutcome =
   | Interpretation
   | { kind: 'failed'; reason: 'quota' | 'failed'; prefill: Prefill }
+  /** la photo elle-même est illisible (format, taille) : rien n'a été envoyé */
+  | { kind: 'image_error' }
   | { kind: 'cancelled' };
 
 export const defaultScanDeps = (invoke: ScanDeps['invoke']): ScanDeps => ({
@@ -39,9 +41,14 @@ export async function scanReceipt(
   deps: ScanDeps,
 ): Promise<ScanOutcome> {
   const empty: Prefill = { date: today, note: '' };
+  let image_base64: string;
   try {
-    const image_base64 = await deps.toBase64(await deps.compress(file));
-    if (signal.aborted) return { kind: 'cancelled' };
+    image_base64 = await deps.toBase64(await deps.compress(file));
+  } catch {
+    return signal.aborted ? { kind: 'cancelled' } : { kind: 'image_error' };
+  }
+  if (signal.aborted) return { kind: 'cancelled' };
+  try {
     const res = await deps.invoke(
       { image_base64, mime: 'image/jpeg', categories: [...categories] },
       signal,

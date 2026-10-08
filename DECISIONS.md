@@ -87,9 +87,17 @@ Contexte : nouvelle fonctionnalité (SPEC §3.10), exception autorisée à la r�
 - **Table `receipt_scans`** : `(user_id, created_at)` seulement, clé primaire composite (évite l'alerte « sans clé primaire »), RLS avec une politique de lecture de ses propres lignes (plutôt qu'aucune politique) ; écriture par la clé service.
 - **Quota atteint** : message dédié en plus du message générique (extension du texte demandé, plus clair pour l'utilisateur).
 - **Double validation** : la fonction valide (montant, catégorie → « Khác », date), puis le client revalide avec ses catégories locales (une catégorie archivée entre-temps retombe sur « Khác ») ; le code de validation est commun (`supabase/functions/scan-receipt/validate.ts`, importé par le client).
-- **iOS et `capture`** : l'attribut demandé ouvre directement l'appareil photo ; choisir une photo de la galerie peut ne pas être proposé selon la version d'iOS. À constater sur l'iPhone ; ajouter un second champ sans `capture` est trivial si besoin.
+- **iOS et `capture`** : voir l'entrée « Scan : deux boutons » ci-dessous (l'attribut `capture` empêche de choisir une photo de la bibliothèque sur iPhone ; corrigé).
 - **tsconfig** : `allowImportingTsExtensions` activé (les fonctions Deno importent avec l'extension `.ts`).
 - **Coût estimé par scan** (hypothèses : photo 1600 px ≈ 2 000 jetons d'image, prompt et schéma ≈ 700, sortie ≈ 100 de JSON + raisonnement « low » ≈ 300 ; tarifs d'octobre 2026 relevés sur des grilles tierces : mini 0,75 / 4,50 USD par million de jetons en entrée / sortie, nano 0,20 / 1,25) :
   - `gpt-5.4-mini` ≈ 0,004 USD (≈ 100 VND) ; `gpt-5.4-nano` ≈ 0,001 USD (≈ 25 VND).
   - Plafond par utilisateur : 30 scans par 24 h ≈ 0,12 USD (mini).
   - Estimation à confirmer sur le tableau de bord d'usage OpenAI après les premiers scans réels.
+
+## 2026-10-08 — Scan : deux boutons (appareil photo / bibliothèque) et décodage robuste
+
+- **Deux champs fichier** : `Chụp ảnh` (`capture="environment"`) et `Thư viện ảnh` (sans `capture`), car sur iPhone `capture` ouvre directement la caméra et interdit la photothèque. Chaque bouton a un `aria-label` explicite ; le reste (fonction, enregistrement direct, toast `Sửa`) est inchangé.
+- **HEIC** : avec `accept="image/*"`, iOS convertit normalement les HEIC en JPEG au moment du choix. Si un HEIC brut arrive quand même, `createImageBitmap` est essayé d'abord, puis un élément `<img>` + `decode()` (Safari sait lire le HEIC ainsi). Si tout échoue : message `Không đọc được ảnh này`, rien n'est envoyé ni enregistré. **Non vérifiable ici** (Chromium ne décode pas le HEIC) : le chemin d'erreur est testé en e2e avec un faux HEIC ; la lecture d'un vrai HEIC reste à constater sur l'iPhone.
+- **Orientation EXIF** : le décodage demande `imageOrientation: 'from-image'` ; en plus, un petit lecteur d'EXIF JPEG (`readJpegInfo`) détecte le cas où le décodeur a ignoré une orientation 5–8 (dimensions décodées = dimensions stockées, image non carrée) et redresse à la main via une matrice de canvas. Les orientations 2–4 gardent les dimensions : on se fie au navigateur.
+- **Grandes images** : le décodage se fait une fois, le canvas est directement à la taille finale (côté long 1600 px) ; au-delà de 60 Mo le fichier est refusé avant décodage (sécurité mémoire du téléphone), avec le même message.
+- **Captures PNG** : fond blanc avant le JPEG (pas de transparence), ratio conservé (testé sur une image 800×3000).
