@@ -57,7 +57,7 @@ export function DataGate({ children }: { children: ReactNode }) {
         <>
           <p className="text-muted">{vi.login.error}</p>
           <button
-            className="tap rounded-full bg-primary-dark px-6 font-semibold text-white"
+            className="tap rounded-full bg-primary px-6 font-semibold text-white"
             onClick={retry}
           >
             {vi.common.retry}

@@ -30,7 +30,7 @@ export function ConfirmSheet({
             {vi.common.cancel}
           </button>
           <button
-            className={`tap rounded-full font-semibold text-white ${danger ? 'bg-danger' : 'bg-primary-dark'}`}
+            className={`tap rounded-full font-semibold text-white ${danger ? 'bg-danger' : 'bg-primary'}`}
             onClick={onConfirm}
           >
             {confirmLabel}

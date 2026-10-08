@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { Ellipsis } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { ChevronDown, Ellipsis } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { Money } from '@/components/Money';
 import { Segmented } from '@/components/Segmented';
 import { useAllCategories, useEarliestMonth, useMonthTransactions } from '@/db/hooks';
 import type { TxType } from '@/db/types';
+import { TabHeader } from '@/app/layouts';
 import { TxRow } from '@/features/home/TxList';
-import { useNavigate } from 'react-router';
 import { vi } from '@/i18n/vi';
 import { addMonths, compareMonths, formatMonthVi, monthStart, todayStr } from '@/lib/dates';
 import { useMonthParam } from '@/lib/nav';
@@ -17,9 +17,9 @@ import { CategoryDonut } from './CategoryDonut';
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="card p-3">
-      <div className="text-xs text-muted">{label}</div>
-      <div className="mt-1 text-xl font-bold">{children}</div>
+    <div className="rounded-xl bg-bg px-2 py-3 text-center">
+      <div className="text-[13px] text-muted">{label}</div>
+      <div className="mt-1 text-[22px] font-bold leading-tight">{children}</div>
     </div>
   );
 }
@@ -60,48 +60,53 @@ export function ChartsPage() {
 
   return (
     <div>
-      <header
-        className="flex items-center justify-between bg-white px-4 pt-[calc(var(--safe-top)+8px)]"
-        style={{ minHeight: 56 }}
-      >
-        <h1 className="text-lg font-bold">{vi.charts.title}</h1>
-        <div className="relative">
-          <button
-            className="tap flex items-center justify-center"
-            aria-label={vi.common.menu}
-            onClick={() => setMenu((v) => !v)}
-          >
-            <Ellipsis />
-          </button>
-          {menu && (
-            <div
-              className="absolute right-0 z-20 w-44 overflow-hidden rounded-xl bg-white shadow-lg"
-              role="menu"
+      <TabHeader
+        title={vi.charts.title}
+        right={
+          <div className="relative">
+            <button
+              className="tap flex items-center justify-center"
+              aria-label={vi.common.menu}
+              onClick={() => setMenu((v) => !v)}
             >
-              <Link role="menuitem" to="/trend" className="tap block px-4 py-3 text-sm">
-                {vi.charts.trend}
-              </Link>
-            </div>
-          )}
-        </div>
-      </header>
+              <Ellipsis />
+            </button>
+            {menu && (
+              <div
+                className="absolute right-0 z-20 w-44 overflow-hidden rounded-xl bg-white shadow-lg"
+                role="menu"
+              >
+                <Link role="menuitem" to="/trend" className="tap block px-4 py-3 text-sm">
+                  {vi.charts.trend}
+                </Link>
+              </div>
+            )}
+          </div>
+        }
+      />
 
       <div className="space-y-3 p-4">
-        <select
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          aria-label={vi.home.pickMonth}
-          data-testid="month-select"
-          className="tap w-full rounded-xl bg-white px-3 font-semibold shadow-sm"
-        >
-          {months.map((m) => (
-            <option key={m} value={m}>
-              {formatMonthVi(m)}
-            </option>
-          ))}
-        </select>
+        <div className="card relative">
+          <select
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            aria-label={vi.home.pickMonth}
+            data-testid="month-select"
+            className="tap w-full appearance-none rounded-2xl bg-transparent px-10 py-3 text-center font-semibold"
+          >
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {formatMonthVi(m)}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={18}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted"
+          />
+        </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="card grid grid-cols-2 gap-2.5 p-3">
           <Tile label={vi.charts.income}>
             <span data-testid="tile-income" className="text-income">
               <Money value={t.income} />
@@ -115,7 +120,7 @@ export function ChartsPage() {
           <Tile label={vi.charts.balance}>
             <span
               data-testid="tile-balance"
-              className={t.balance < 0 ? 'text-danger' : 'text-income'}
+              className={t.balance < 0 ? 'text-danger-ink' : 'text-income'}
             >
               <Money value={t.balance} />
             </span>
@@ -127,11 +132,12 @@ export function ChartsPage() {
           </Tile>
         </div>
 
-        <section className="card p-3" aria-label={vi.charts.category}>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-bold">{vi.charts.category}</h2>
-            <div className="w-56">
+        <section className="card p-4" aria-label={vi.charts.category}>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="text-xl font-bold">{vi.charts.category}</h2>
+            <div className="w-[176px]">
               <Segmented
+                small
                 value={type}
                 onChange={setType}
                 options={[
@@ -145,30 +151,34 @@ export function ChartsPage() {
             <p className="py-10 text-center text-sm text-muted">{vi.charts.noData}</p>
           ) : (
             <>
-              <CategoryDonut items={items} total={total} />
-              <ul className="mt-2 divide-y divide-divider" data-testid="ranking">
+              <CategoryDonut items={items} total={total} expense={type === 'expense'} />
+              <ul className="mt-3 space-y-1" data-testid="ranking">
                 {items.map((i) => (
                   <li key={i.categoryId}>
                     <button
-                      className="tap flex w-full items-center gap-3 py-2 text-left"
+                      className="tap flex w-full items-center gap-3 py-1.5 text-left"
                       onClick={() => setDetail(i.categoryId)}
                     >
-                      <CategoryIcon icon={i.icon} color={i.color} size={32} />
+                      <CategoryIcon icon={i.icon} color={i.color} size={36} />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2 text-sm">
-                          <span className="truncate font-medium">{i.name}</span>
-                          <span className="shrink-0 text-xs text-muted">
-                            {i.percent.toFixed(1)}%
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-base font-medium">
+                            {i.name}{' '}
+                            <span className="font-normal text-muted">{i.percent.toFixed(1)}%</span>
                           </span>
+                          <Money
+                            value={i.amount}
+                            expense={type === 'expense'}
+                            className="shrink-0 text-[15px] font-bold"
+                          />
                         </div>
-                        <div className="mt-1 h-1 overflow-hidden rounded-full bg-divider">
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-divider">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${i.percent}%`, background: i.color }}
                           />
                         </div>
                       </div>
-                      <Money value={i.amount} className="shrink-0 text-sm font-semibold" />
                     </button>
                   </li>
                 ))}
@@ -186,7 +196,7 @@ export function ChartsPage() {
         <div className="max-h-[60vh] overflow-y-auto pb-4">
           <h2 className="px-4 pb-2 text-lg font-bold">{detailCat?.name}</h2>
           <ul>
-            {detailItems
+            {[...detailItems]
               .sort(
                 (a, b) =>
                   b.occurred_on.localeCompare(a.occurred_on) ||

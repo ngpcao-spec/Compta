@@ -5,6 +5,7 @@ import {
   dailyAverage,
   groupByDay,
   inMonth,
+  niceAxis,
   resolveBudget,
   totals,
   yearSummary,
@@ -139,5 +140,21 @@ describe('yearSummary', () => {
     const s = yearSummary(data, 2025, '2026-03-20');
     expect(s.months).toHaveLength(12);
     expect(s.monthlyAverage.expense).toBe(83);
+  });
+});
+
+describe('niceAxis', () => {
+  it('graduations rondes comme la maquette (22tr → 0, 10, 20, 30tr)', () => {
+    expect(niceAxis(22_000_000)).toEqual({
+      max: 30_000_000,
+      ticks: [0, 10_000_000, 20_000_000, 30_000_000],
+    });
+  });
+  it('petites et grandes valeurs', () => {
+    expect(niceAxis(120_000).ticks).toEqual([0, 50_000, 100_000, 150_000]);
+    expect(niceAxis(95_000_000).max).toBe(100_000_000);
+  });
+  it('sans donnée : axe minimal', () => {
+    expect(niceAxis(0)).toEqual({ max: 1_000_000, ticks: [0, 1_000_000] });
   });
 });

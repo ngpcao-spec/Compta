@@ -24,7 +24,8 @@ export const vi = {
   },
   login: {
     title: 'Sổ Thu Chi',
-    tagline: 'Theo dõi thu chi cá nhân, dùng được cả khi không có mạng.',
+    tagline: 'Ghi thu chi mọi lúc mọi nơi, đặt ngân sách và xem chi tiêu rõ ràng từng đồng.',
+    footnote: 'Dữ liệu của bạn được đồng bộ an toàn và vẫn dùng được khi không có mạng.',
     google: 'Đăng nhập bằng Google',
     signingIn: 'Đang chuyển đến Google…',
     error: 'Không đăng nhập được. Vui lòng thử lại.',
@@ -64,6 +65,7 @@ export const vi = {
     saved: 'Đã lưu giao dịch',
     delete: 'Xóa giao dịch',
     pickCategory: 'Chọn danh mục',
+    scrollHint: (n: number) => `Cuộn để xem tất cả ${n} danh mục`,
     amount: 'Số tiền',
   },
   budget: {
@@ -100,6 +102,10 @@ export const vi = {
     saved: 'Đã lưu danh mục',
     nameRequired: 'Vui lòng nhập tên',
     reorderDone: 'Xong',
+    archiveThis: 'Ẩn danh mục',
+    scrollIcons: 'Cuộn để xem khoảng 60 biểu tượng',
+    colorTitle: 'Màu',
+    iconTitle: 'Biểu tượng',
     dragHandle: 'Kéo để sắp xếp',
   },
   charts: {
@@ -115,7 +121,7 @@ export const vi = {
     byCategory: 'Giao dịch theo danh mục',
   },
   trend: {
-    title: 'Xu hướng chi tiêu',
+    title: 'Xu hướng',
     card: 'Xu hướng',
     colDate: 'Ngày',
     colIncome: 'Thu nhập',
@@ -138,7 +144,8 @@ export const vi = {
     deleteAccountWord: 'XÓA',
     deleteAccountFailed: 'Không xóa được tài khoản. Cần có kết nối mạng.',
     version: 'Phiên bản',
-    install: 'Cài đặt ứng dụng',
+    versionLine: (v: string) => `Sổ Thu Chi · Phiên bản ${v}`,
+    install: 'Cài ứng dụng vào màn hình chính',
     installIos: 'Chia sẻ → Thêm vào MH chính',
     csvHeader: ['Ngày', 'Loại', 'Danh mục', 'Số tiền', 'Ghi chú'],
     csvEmpty: 'Chưa có giao dịch để xuất',

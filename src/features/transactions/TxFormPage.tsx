@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Calendar, PenLine, Pencil, Trash2 } from 'lucide-react';
 import { AmountKeypad } from '@/components/AmountKeypad';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
@@ -14,9 +14,9 @@ import {
   updateTransaction,
 } from '@/db/repo/transactions';
 import type { Transaction, TxType } from '@/db/types';
-import { ScreenHeader } from '@/app/layouts';
+import { ModalHeader } from '@/app/layouts';
 import { vi } from '@/i18n/vi';
-import { todayStr } from '@/lib/dates';
+import { formatDayShort, todayStr } from '@/lib/dates';
 import { evaluate, formatExpr, hasOperator } from '@/lib/expr';
 import { formatVnd } from '@/lib/money';
 import { useGoBack } from '@/lib/nav';
@@ -58,6 +58,7 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
   const goBack = useGoBack('/');
   const navigate = useNavigate();
   const toast = useToast();
+  const dateRef = useRef<HTMLInputElement>(null);
 
   const [type, setType] = useState<TxType>(init.type);
   const [categoryId, setCategoryId] = useState<string | null>(init.categoryId);
@@ -73,10 +74,14 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
     () => [...(activeQ ?? []), ...(archivedQ ?? []).filter((c) => c.id === categoryId)],
     [activeQ, archivedQ, categoryId],
   );
+  const selected = categories.find((c) => c.id === categoryId);
 
   const preview = evaluate(expr === '' ? '0' : expr);
   const value = preview.ok ? preview.value : 0;
   const valid = categoryId !== null && value > 0;
+  const operator = hasOperator(expr);
+  const bigText =
+    operator && preview.ok ? formatVnd(preview.value) : expr === '' ? '0' : formatExpr(expr);
 
   const save = async (amount: number) => {
     if (!categoryId || amount <= 0) return;
@@ -91,15 +96,27 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
     }
   };
 
+  const openDate = () => {
+    const el = dateRef.current;
+    if (!el) return;
+    try {
+      el.showPicker();
+    } catch {
+      el.focus();
+      el.click();
+    }
+  };
+
   return (
-    <div className="flex h-full flex-col bg-bg">
-      <ScreenHeader
+    <div className="relative flex h-full flex-col overflow-hidden bg-bg">
+      <ModalHeader
         title={editing ? vi.tx.editTitle : vi.tx.newTitle}
-        onBack={goBack}
+        leftLabel={vi.common.cancel}
+        onLeft={goBack}
         right={
           editing ? (
             <button
-              className="tap flex items-center justify-center text-danger"
+              className="tap flex items-center justify-center text-danger-ink"
               aria-label={vi.tx.delete}
               onClick={() => setConfirmDelete(true)}
               data-testid="delete-tx"
@@ -108,8 +125,7 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
             </button>
           ) : undefined
         }
-      />
-      <div className="px-4 py-3">
+      >
         <Segmented
           label={vi.tx.pickCategory}
           value={type}
@@ -122,80 +138,121 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
             { value: 'income', label: vi.tx.income },
           ]}
         />
-      </div>
+      </ModalHeader>
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-        <ul className="grid grid-cols-4 gap-y-3">
+      <div
+        className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 pt-5"
+        style={{ paddingBottom: categoryId ? 460 : 16 }}
+      >
+        <ul className="grid grid-cols-4 gap-x-1 gap-y-5">
           {categories.map((c) => {
-            const selected = c.id === categoryId;
+            const isSelected = c.id === categoryId;
             return (
               <li key={c.id}>
                 <button
-                  className="tap flex w-full flex-col items-center gap-1 py-1"
-                  aria-pressed={selected}
+                  className={`flex w-full flex-col items-center gap-2 text-[13px] ${categoryId && !isSelected ? 'opacity-[0.55]' : ''} ${isSelected ? 'font-semibold' : ''}`}
+                  aria-pressed={isSelected}
                   onClick={() => setCategoryId(c.id)}
                   data-testid="cat-cell"
                 >
-                  <span className={`rounded-full p-0.5 ${selected ? 'ring-2 ring-primary' : ''}`}>
-                    <CategoryIcon icon={c.icon} color={c.color} size={48} />
-                  </span>
                   <span
-                    className={`w-full truncate text-center text-xs ${selected ? 'font-semibold text-link' : ''}`}
+                    className={`rounded-full ${isSelected ? 'p-[3px] outline outline-2 outline-primary' : 'p-[3px]'}`}
                   >
-                    {c.name}
+                    <CategoryIcon icon={c.icon} color={c.color} size={52} />
                   </span>
+                  <span className="w-full truncate text-center">{c.name}</span>
                 </button>
               </li>
             );
           })}
           <li>
             <button
-              className="tap flex w-full flex-col items-center gap-1 py-1"
+              className="flex w-full flex-col items-center gap-2 text-[13px]"
               onClick={() => void navigate('/more/categories')}
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E6E8EE] text-muted">
-                <Pencil size={20} />
+              <span className="p-[3px]">
+                <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full border-[1.5px] border-dashed border-[#9AA0A8] bg-white text-[#4B5563]">
+                  <Pencil size={20} />
+                </span>
               </span>
-              <span className="text-xs">{vi.tx.edit}</span>
+              <span>{vi.tx.edit}</span>
             </button>
           </li>
         </ul>
+        {!categoryId && (
+          <p className="mt-6 text-center text-[13px] text-muted">
+            {vi.tx.scrollHint(categories.length)}
+          </p>
+        )}
       </div>
 
-      {categoryId && (
-        <section className="shrink-0 border-t border-divider bg-white" aria-label={vi.tx.amount}>
-          <div className="px-4 pt-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-3xl font-bold text-link" data-testid="amount-display">
-                {expr === '' ? '0' : formatExpr(expr)}
-              </span>
-              {hasOperator(expr) && preview.ok && (
-                <span className="shrink-0 text-sm text-muted">= {formatVnd(preview.value)}</span>
+      {selected && (
+        <section
+          className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 rounded-t-[24px] bg-white px-4 pb-[max(var(--safe-bottom),28px)] pt-2.5 shadow-[0_-8px_30px_rgb(0_0_0/0.10)]"
+          aria-label={vi.tx.amount}
+        >
+          <div className="h-[5px] w-10 self-center rounded-full bg-[#D5D8DE]" />
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-9 items-center gap-2 rounded-full py-0 pl-1 pr-3 text-sm font-semibold"
+              style={{ background: `${selected.color}26` }}
+            >
+              <CategoryIcon icon={selected.icon} color={selected.color} size={28} />
+              {selected.name}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col items-end gap-0.5">
+              {operator && (
+                <span className="max-w-full truncate text-sm text-muted" data-testid="expr-display">
+                  {formatExpr(expr).replace(/([+−×÷])/g, ' $1 ')}
+                </span>
               )}
+              <span
+                className="max-w-full truncate text-[34px] font-bold leading-tight tracking-[-0.5px]"
+                data-testid="amount-display"
+              >
+                {bigText}
+              </span>
             </div>
-            <div className="mt-2 flex items-center gap-2 pb-2">
+          </div>
+
+          <div className="flex gap-2">
+            <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-bg px-3 text-muted">
+              <PenLine size={18} />
               <input
                 value={note}
                 maxLength={NOTE_MAX}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={vi.tx.note}
                 aria-label={vi.tx.note}
-                className="min-h-[44px] min-w-0 flex-1 rounded-xl bg-bg px-3 text-sm outline-none focus:ring-2 focus:ring-primary"
+                className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
               />
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-xl bg-bg px-3 text-sm font-semibold"
+                onClick={openDate}
+                data-testid="date-button"
+              >
+                <Calendar size={18} className="text-primary" />
+                {date === todayStr() ? vi.common.today : formatDayShort(date)}
+              </button>
               <input
+                ref={dateRef}
                 type="date"
                 value={date}
                 onChange={(e) => e.target.value && setDate(e.target.value)}
                 aria-label={vi.tx.date}
-                className="min-h-[44px] rounded-xl bg-bg px-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                tabIndex={-1}
+                className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
               />
             </div>
-            {error && (
-              <p role="alert" className="pb-1 text-sm text-danger">
-                {error}
-              </p>
-            )}
           </div>
+          {error && (
+            <p role="alert" className="text-sm text-danger-ink">
+              {error}
+            </p>
+          )}
           <AmountKeypad
             expr={expr}
             onExprChange={setExpr}

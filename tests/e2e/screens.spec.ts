@@ -21,9 +21,11 @@ test('captures des écrans', async ({ page }) => {
   await page.getByTestId('add-tx').click();
   await page.waitForTimeout(200);
   await page.screenshot({ path: out('tx-categories') });
-  await page.getByTestId('cat-cell').filter({ hasText: 'Quần áo' }).click();
-  await page.getByTestId('key-3').click();
-  await page.getByTestId('key-000').click();
+  // même scénario que la maquette « TxAmount » : Ăn uống, 120,000 + 80,000
+  await page.getByTestId('cat-cell').filter({ hasText: 'Ăn uống' }).click();
+  for (const k of ['1', '2', '0', '000']) await page.getByTestId(`key-${k}`).click();
+  await page.getByTestId('key-plus').click();
+  for (const k of ['8', '0', '000']) await page.getByTestId(`key-${k}`).click();
   await page.waitForTimeout(200);
   await page.screenshot({ path: out('tx-keypad') });
 
@@ -37,7 +39,8 @@ test('captures des écrans', async ({ page }) => {
   await page.goto('/more/categories');
   await page.waitForTimeout(300);
   await page.screenshot({ path: out('categories') });
-  await page.goto('/more/categories/new');
+  await page.getByRole('button', { name: 'Menu Cà phê' }).click();
+  await page.getByRole('button', { name: 'Sửa', exact: true }).click();
   await page.waitForTimeout(300);
   await page.screenshot({ path: out('category-edit') });
 

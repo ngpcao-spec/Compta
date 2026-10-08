@@ -147,23 +147,24 @@ export const ICONS: Readonly<Record<string, LucideIcon>> = {
 
 export const ICON_NAMES: readonly string[] = Object.keys(ICONS);
 
+/** Palette de 16 couleurs du sélecteur (maquette « Sửa danh mục »). */
 export const COLOR_PALETTE: readonly string[] = [
-  '#FBC02D',
-  '#FF8A65',
-  '#FF7043',
-  '#EF5350',
-  '#EC407A',
-  '#AB47BC',
-  '#7E57C2',
-  '#5C6BC0',
-  '#2196F3',
+  '#F9A825',
   '#26C6DA',
-  '#26A69A',
+  '#7986CB',
+  '#1E88E5',
+  '#FF8A65',
+  '#7E57C2',
+  '#AFB42B',
   '#66BB6A',
-  '#9CCC65',
+  '#EC407A',
+  '#FF7043',
+  '#42A5F5',
   '#8D6E63',
+  '#5C6BC0',
+  '#26A69A',
+  '#EF5350',
   '#78909C',
-  '#9E9E9E',
 ];
 
 export function iconFor(name: string): LucideIcon {

@@ -4,14 +4,16 @@
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
-  --color-income: var(--income-text);
-  --color-link: var(--income-text);
+  --color-primary-tint: var(--primary-tint);
+  --color-income: var(--income);
+  --color-link: var(--primary);
   --color-expense: var(--expense);
   --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
   --color-bg: var(--bg);
   --color-card: var(--card);
   --color-ink: var(--text);
-  --color-muted: var(--text-muted-aa);
+  --color-muted: var(--text-muted);
   --color-divider: var(--divider);
   --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --radius-card: 16px;
@@ -31,14 +33,14 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
-button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-input,
-textarea {
-  font: inherit;
+/* Dans la couche base : une règle hors couche écraserait les utilitaires Tailwind (font-*, text-*). */
+@layer base {
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
+  }
 }
 .card {
   background: var(--card);

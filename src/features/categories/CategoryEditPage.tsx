@@ -5,9 +5,14 @@ import { COLOR_PALETTE, ICON_NAMES, iconFor } from '@/components/icons';
 import { Segmented } from '@/components/Segmented';
 import { useToast } from '@/components/Toast';
 import { useCategory } from '@/db/hooks';
-import { CATEGORY_NAME_MAX, createCategory, updateCategory } from '@/db/repo/categories';
+import {
+  CATEGORY_NAME_MAX,
+  createCategory,
+  setCategoryArchived,
+  updateCategory,
+} from '@/db/repo/categories';
 import type { Category, TxType } from '@/db/types';
-import { ScreenHeader } from '@/app/layouts';
+import { ModalHeader } from '@/app/layouts';
 import { vi } from '@/i18n/vi';
 import { useGoBack } from '@/lib/nav';
 
@@ -38,7 +43,7 @@ export function CategoryEditPage() {
         type: params.get('type') === 'income' ? 'income' : 'expense',
         name: '',
         icon: 'tag',
-        color: COLOR_PALETTE[8] ?? '#2196F3',
+        color: COLOR_PALETTE[3] ?? '#1E88E5',
       };
   return <CategoryForm key={id ?? 'new'} id={editing ? id : undefined} init={init} />;
 }
@@ -71,12 +76,13 @@ function CategoryForm({ id, init }: { id: string | undefined; init: Init }) {
 
   return (
     <div className="flex h-full flex-col">
-      <ScreenHeader
+      <ModalHeader
         title={editing ? vi.categories.editTitle : vi.categories.newTitle}
-        onBack={goBack}
+        leftLabel={vi.common.cancel}
+        onLeft={goBack}
         right={
           <button
-            className="tap px-2 font-semibold text-link"
+            className="tap text-base font-bold text-primary"
             onClick={() => void save()}
             data-testid="save-category"
           >
@@ -84,52 +90,51 @@ function CategoryForm({ id, init }: { id: string | undefined; init: Init }) {
           </button>
         }
       />
-      <div className="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <div className="flex justify-center">
-          <CategoryIcon icon={icon} color={color} size={72} />
-        </div>
-
-        <div className="card p-3">
-          <label className="text-xs font-semibold text-muted" htmlFor="cat-name">
-            {vi.categories.name}
-          </label>
-          <input
-            id="cat-name"
-            value={name}
-            maxLength={CATEGORY_NAME_MAX}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError(null);
-            }}
-            className="mt-1 min-h-[44px] w-full bg-transparent text-base outline-none"
-            autoFocus={!editing}
-          />
-          <div className="text-right text-xs text-muted">
-            {name.length}/{CATEGORY_NAME_MAX}
+      <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pb-10">
+        <div className="card flex items-center gap-4 p-4">
+          <CategoryIcon icon={icon} color={color} size={56} />
+          <div className="min-w-0 flex-1">
+            <label className="text-[13px] text-muted" htmlFor="cat-name">
+              {vi.categories.name} ·{' '}
+              {type === 'expense' ? vi.categories.expenseTab : vi.categories.incomeTab}
+            </label>
+            <input
+              id="cat-name"
+              value={name}
+              maxLength={CATEGORY_NAME_MAX}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError(null);
+              }}
+              className="mt-1 block min-h-[40px] w-full border-0 border-b-2 border-primary bg-transparent text-[22px] font-semibold outline-none"
+              autoFocus={!editing}
+            />
+            {error && (
+              <p role="alert" className="mt-1 text-sm text-danger-ink">
+                {error}
+              </p>
+            )}
           </div>
-          {error && (
-            <p role="alert" className="text-sm text-danger">
-              {error}
-            </p>
-          )}
         </div>
 
-        <div className="card p-3">
-          <div className="mb-2 text-xs font-semibold text-muted">{vi.categories.type}</div>
-          <Segmented
-            value={type}
-            onChange={editing ? () => undefined : setType}
-            options={[
-              { value: 'expense', label: vi.categories.expenseTab },
-              { value: 'income', label: vi.categories.incomeTab },
-            ]}
-          />
-        </div>
+        {!editing && (
+          <div className="card p-4">
+            <div className="mb-2 text-base font-bold">{vi.categories.type}</div>
+            <Segmented
+              value={type}
+              onChange={setType}
+              options={[
+                { value: 'expense', label: vi.categories.expenseTab },
+                { value: 'income', label: vi.categories.incomeTab },
+              ]}
+            />
+          </div>
+        )}
 
-        <div className="card p-3">
-          <div className="mb-2 text-xs font-semibold text-muted">{vi.categories.color}</div>
+        <div className="card p-4">
+          <div className="mb-3 text-base font-bold">{vi.categories.colorTitle}</div>
           <div
-            className="grid grid-cols-8 gap-2"
+            className="grid grid-cols-8 gap-x-2 gap-y-3"
             role="radiogroup"
             aria-label={vi.categories.color}
           >
@@ -140,16 +145,20 @@ function CategoryForm({ id, init }: { id: string | undefined; init: Init }) {
                 aria-checked={c === color}
                 aria-label={c}
                 onClick={() => setColor(c)}
-                className={`h-9 w-9 rounded-full ${c === color ? 'ring-2 ring-offset-2 ring-ink' : ''}`}
+                className={`h-8 w-8 justify-self-center rounded-full ${c === color ? 'outline outline-[3px] outline-offset-2 outline-ink' : ''}`}
                 style={{ background: c }}
               />
             ))}
           </div>
         </div>
 
-        <div className="card p-3">
-          <div className="mb-2 text-xs font-semibold text-muted">{vi.categories.icon}</div>
-          <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label={vi.categories.icon}>
+        <div className="card p-4">
+          <div className="mb-3 text-base font-bold">{vi.categories.iconTitle}</div>
+          <div
+            className="no-scrollbar grid max-h-[176px] grid-cols-6 gap-2 overflow-y-auto"
+            role="radiogroup"
+            aria-label={vi.categories.icon}
+          >
             {ICON_NAMES.map((n) => {
               const Icon = iconFor(n);
               const on = n === icon;
@@ -160,7 +169,7 @@ function CategoryForm({ id, init }: { id: string | undefined; init: Init }) {
                   aria-checked={on}
                   aria-label={n}
                   onClick={() => setIcon(n)}
-                  className={`tap flex items-center justify-center rounded-xl ${on ? 'text-white' : 'bg-bg text-ink'}`}
+                  className={`flex h-[46px] items-center justify-center rounded-xl ${on ? 'text-white' : 'bg-bg text-ink'}`}
                   style={on ? { background: color } : undefined}
                 >
                   <Icon size={22} />
@@ -168,7 +177,21 @@ function CategoryForm({ id, init }: { id: string | undefined; init: Init }) {
               );
             })}
           </div>
+          <p className="mt-2 text-center text-[13px] text-muted">{vi.categories.scrollIcons}</p>
         </div>
+
+        {editing && id && (
+          <button
+            className="card tap w-full py-3.5 text-base font-bold text-danger-ink"
+            data-testid="archive-category"
+            onClick={async () => {
+              await setCategoryArchived(id, true);
+              goBack();
+            }}
+          >
+            {vi.categories.archiveThis}
+          </button>
+        )}
       </div>
     </div>
   );

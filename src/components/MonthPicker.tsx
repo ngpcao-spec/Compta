@@ -39,7 +39,7 @@ export function MonthPicker({ open, value, onClose, onPick }: Props) {
                   onPick(monthOf(year, m));
                   onClose();
                 }}
-                className={`tap rounded-xl py-3 text-sm font-semibold ${active ? 'bg-primary-dark text-white' : 'bg-bg'}`}
+                className={`tap rounded-xl py-3 text-sm font-semibold ${active ? 'bg-primary text-white' : 'bg-bg'}`}
               >
                 {`thg ${m}`}
               </button>

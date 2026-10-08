@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   CartesianGrid,
   Line,
@@ -12,67 +12,85 @@ import {
 } from 'recharts';
 import { Money, useAmountText } from '@/components/Money';
 import { Segmented } from '@/components/Segmented';
-import { ScreenHeader } from '@/app/layouts';
-import { useTransactionYears, useYearTransactions } from '@/db/hooks';
+import { useYearTransactions } from '@/db/hooks';
 import type { TxType } from '@/db/types';
 import { vi } from '@/i18n/vi';
 import { parseDateStr, todayStr } from '@/lib/dates';
 import { useGoBack } from '@/lib/nav';
-import { yearSummary } from '@/lib/stats';
+import { niceAxis, yearSummary } from '@/lib/stats';
 
-function balanceClass(v: number) {
-  return v < 0 ? 'text-danger' : 'text-income';
-}
+const arrowClass =
+  'flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_1px_3px_rgb(0_0_0/0.08)] disabled:text-[#9AA0A8]';
 
 export function TrendPage() {
   const goBack = useGoBack('/charts');
   const today = todayStr();
-  const [year, setYear] = useState(parseDateStr(today).y);
+  const currentYear = parseDateStr(today).y;
+  const [year, setYear] = useState(currentYear);
   const [type, setType] = useState<TxType>('expense');
   const txsQ = useYearTransactions(year);
   const txs = useMemo(() => txsQ ?? [], [txsQ]);
-  const years = useTransactionYears();
   const text = useAmountText();
 
   const summary = useMemo(() => yearSummary(txs, year, today), [txs, year, today]);
   const data = useMemo(
     () =>
       [...summary.months].reverse().map((m) => ({
-        label: `${parseDateStr(m.month).m}`,
+        label: `thg ${parseDateStr(m.month).m}`,
         value: type === 'expense' ? m.expense : m.income,
       })),
     [summary, type],
   );
-  const color = type === 'expense' ? '#E53935' : '#2196F3';
-  const yearOptions = years.includes(year) ? years : [year, ...years].sort((a, b) => b - a);
+  const axis = useMemo(() => niceAxis(Math.max(0, ...data.map((d) => d.value))), [data]);
+  const color = type === 'expense' ? '#E53935' : '#1976D2';
 
   return (
     <div className="flex h-full flex-col">
-      <ScreenHeader
-        title={vi.trend.title}
-        onBack={goBack}
-        right={
-          <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            aria-label={vi.trend.pickYear}
-            data-testid="year-select"
-            className="tap rounded-lg bg-transparent text-sm font-semibold text-link"
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        }
-      />
+      <header
+        className="relative flex items-center bg-white px-2 pt-[var(--safe-top)] shadow-[0_1px_0_var(--divider)]"
+        style={{ minHeight: 52 }}
+      >
+        <button
+          className="tap flex items-center gap-0.5 px-2 text-base text-primary"
+          onClick={goBack}
+          aria-label={vi.common.back}
+        >
+          <ChevronLeft size={22} strokeWidth={2.2} />
+          {vi.tabs.charts}
+        </button>
+        <h1 className="pointer-events-none absolute inset-x-0 text-center text-[17px] font-bold">
+          {vi.trend.title}
+        </h1>
+      </header>
+
       <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pb-10">
-        <section className="card p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-bold">{vi.trend.card}</h2>
-            <div className="w-56">
+        <div className="flex items-center justify-center gap-6">
+          <button
+            className={arrowClass}
+            aria-label={vi.home.prevMonth}
+            onClick={() => setYear(year - 1)}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="min-w-16 text-center text-[22px] font-bold" data-testid="year-label">
+            {year}
+          </span>
+          <button
+            className={arrowClass}
+            aria-label={vi.home.nextMonth}
+            disabled={year >= currentYear}
+            onClick={() => setYear(year + 1)}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        <section className="card p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-xl font-bold">{vi.trend.card}</h2>
+            <div className="w-[176px]">
               <Segmented
+                small
                 value={type}
                 onChange={setType}
                 options={[
@@ -84,41 +102,35 @@ export function TrendPage() {
           </div>
           <div className="h-[220px]" data-testid="trend-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: 0 }}>
+              <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="#ECEDF1" vertical={false} />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
-                  stroke="#8A8F98"
-                  interval={0}
-                  tickFormatter={(l: string) => `thg ${l}`}
+                  stroke="#6B7280"
+                  interval={1}
                 />
                 <YAxis
-                  width={44}
+                  width={40}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={10}
-                  stroke="#8A8F98"
+                  fontSize={11}
+                  stroke="#646B78"
+                  domain={[0, axis.max]}
+                  ticks={axis.ticks}
                   tickFormatter={(v: number) =>
-                    v >= 1_000_000
-                      ? `${Math.round(v / 1_000_000)}M`
-                      : v >= 1000
-                        ? `${Math.round(v / 1000)}K`
-                        : String(v)
+                    v >= 1_000_000 ? `${v / 1_000_000}tr` : v >= 1000 ? `${v / 1000}k` : String(v)
                   }
                 />
-                <Tooltip
-                  formatter={(v) => text(Number(v))}
-                  labelFormatter={(l) => `thg ${String(l)}`}
-                />
+                <Tooltip formatter={(v) => text(Number(v))} />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="value"
                   stroke={color}
                   strokeWidth={2}
-                  dot={{ r: 3, fill: color }}
+                  dot={{ r: 3.5, fill: color, stroke: color }}
                   isAnimationActive={false}
                 />
               </LineChart>
@@ -126,77 +138,71 @@ export function TrendPage() {
           </div>
         </section>
 
-        <section className="card overflow-hidden text-sm" aria-label={vi.trend.title}>
+        <section className="card overflow-hidden" aria-label={vi.trend.title}>
           <table className="w-full table-fixed text-[12px]" data-testid="trend-table">
             <thead>
-              <tr className="border-b border-divider text-xs text-muted">
-                <th className="w-[19%] px-3 py-2 text-left font-medium">{vi.trend.colDate}</th>
-                <th className="px-1 py-2 text-right font-medium">{vi.trend.colIncome}</th>
-                <th className="px-1 py-2 text-right font-medium">{vi.trend.colExpense}</th>
-                <th className="px-1 py-2 text-right font-medium">{vi.trend.colBalance}</th>
-                <th className="w-5" />
+              <tr className="bg-[#F7F8FA] text-muted">
+                <th className="w-[25%] px-3 py-3 text-left font-medium">{vi.trend.colDate}</th>
+                <th className="px-1 py-3 text-right font-medium">{vi.trend.colIncome}</th>
+                <th className="px-1 py-3 text-right font-medium">{vi.trend.colExpense}</th>
+                <th className="px-1 py-3 text-right font-medium">{vi.trend.colBalance}</th>
+                <th className="w-6" />
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-divider font-semibold" data-testid="row-year">
-                <td className="px-3 py-3">{year}</td>
+              <tr className="border-t border-divider font-bold" data-testid="row-year">
+                <td className="px-3 py-3.5">{year}</td>
                 <td className="px-1 text-right text-income">
                   <Money value={summary.year.income} />
                 </td>
                 <td className="px-1 text-right">
                   <Money value={summary.year.expense} expense />
                 </td>
-                <td className={`px-1 text-right ${balanceClass(summary.year.balance)}`}>
+                <td className="px-1 text-right">
                   <Money value={summary.year.balance} />
                 </td>
                 <td />
               </tr>
-              <tr className="border-b border-divider" data-testid="row-average">
-                <td className="whitespace-nowrap px-3 py-3 text-[11px] text-muted">
-                  {vi.trend.monthly}
-                </td>
+              <tr className="border-t border-divider font-bold" data-testid="row-average">
+                <td className="whitespace-nowrap px-3 py-3.5 text-[11px]">{vi.trend.monthly}</td>
                 <td className="px-1 text-right text-income">
                   <Money value={summary.monthlyAverage.income} />
                 </td>
                 <td className="px-1 text-right">
                   <Money value={summary.monthlyAverage.expense} expense />
                 </td>
-                <td className={`px-1 text-right ${balanceClass(summary.monthlyAverage.balance)}`}>
+                <td className="px-1 text-right">
                   <Money value={summary.monthlyAverage.balance} />
                 </td>
                 <td />
               </tr>
-              {summary.months.map((m) => (
-                <tr
-                  key={m.month}
-                  className="border-b border-divider last:border-b-0"
-                  data-testid="row-month"
-                >
-                  <td className="px-3 py-3">
-                    <Link
-                      to={`/charts?m=${m.month.slice(0, 7)}`}
-                      className="block"
-                    >{`thg ${parseDateStr(m.month).m}`}</Link>
-                  </td>
-                  <td className="px-1 text-right text-income">
-                    <Money value={m.income} />
-                  </td>
-                  <td className="px-1 text-right">
-                    <Money value={m.expense} expense />
-                  </td>
-                  <td className={`px-1 text-right ${balanceClass(m.balance)}`}>
-                    <Money value={m.balance} />
-                  </td>
-                  <td className="pr-1 text-muted">
-                    <Link
-                      to={`/charts?m=${m.month.slice(0, 7)}`}
-                      aria-label={`thg ${parseDateStr(m.month).m}`}
-                    >
-                      <ChevronRight size={16} />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {summary.months.map((m) => {
+                const to = `/charts?m=${m.month.slice(0, 7)}`;
+                const label = `thg ${parseDateStr(m.month).m} ${year}`;
+                return (
+                  <tr key={m.month} className="border-t border-divider" data-testid="row-month">
+                    <td className="px-3 py-3.5">
+                      <Link to={to} className="block whitespace-nowrap">
+                        {label}
+                      </Link>
+                    </td>
+                    <td className="px-1 text-right text-income">
+                      <Money value={m.income} />
+                    </td>
+                    <td className="px-1 text-right">
+                      <Money value={m.expense} expense />
+                    </td>
+                    <td className="px-1 text-right">
+                      <Money value={m.balance} />
+                    </td>
+                    <td className="pr-1.5 text-muted">
+                      <Link to={to} aria-label={label}>
+                        <ChevronRight size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </section>

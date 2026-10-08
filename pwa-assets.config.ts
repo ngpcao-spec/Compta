@@ -6,9 +6,9 @@ export default defineConfig({
     maskable: {
       ...minimal2023Preset.maskable,
       padding: 0.2,
-      resizeOptions: { background: '#2F8FED' },
+      resizeOptions: { background: '#1A6ED8' },
     },
-    apple: { ...minimal2023Preset.apple, padding: 0.2, resizeOptions: { background: '#2F8FED' } },
+    apple: { ...minimal2023Preset.apple, padding: 0.2, resizeOptions: { background: '#1A6ED8' } },
   },
   images: ['public/logo.svg'],
 });

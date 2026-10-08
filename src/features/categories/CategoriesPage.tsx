@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowUpDown, ChevronDown, ChevronLeft, Ellipsis, GripVertical, Plus } from 'lucide-react';
+import { ArrowDownUp, ChevronDown, ChevronLeft, Ellipsis, GripVertical, Plus } from 'lucide-react';
 import {
   DndContext,
   KeyboardSensor,
@@ -27,6 +27,9 @@ import type { Category, TxType } from '@/db/types';
 import { vi } from '@/i18n/vi';
 import { useGoBack } from '@/lib/nav';
 
+const cardClass =
+  'flex h-[60px] items-center gap-3.5 rounded-[14px] bg-white pl-3.5 pr-1 shadow-[0_1px_6px_rgb(16_24_40/0.04)]';
+
 function CategoryCard({
   category,
   reorder,
@@ -48,11 +51,11 @@ function CategoryCard({
         transition,
         zIndex: isDragging ? 10 : undefined,
       }}
-      className={`card flex items-center gap-3 px-3 py-2 ${isDragging ? 'shadow-lg' : ''}`}
+      className={`${cardClass} ${isDragging ? 'shadow-lg' : ''}`}
       data-testid="category-card"
     >
       <CategoryIcon icon={category.icon} color={category.color} />
-      <span className="min-w-0 flex-1 truncate font-medium">{category.name}</span>
+      <span className="min-w-0 flex-1 truncate text-base font-medium">{category.name}</span>
       {reorder ? (
         <button
           className="tap flex touch-none items-center justify-center text-muted"
@@ -69,7 +72,7 @@ function CategoryCard({
           aria-label={`${vi.common.menu} ${category.name}`}
           onClick={onMenu}
         >
-          <Ellipsis />
+          <Ellipsis size={20} strokeWidth={2.6} />
         </button>
       )}
     </li>
@@ -103,59 +106,62 @@ export function CategoriesPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header
-        className="flex items-center justify-between bg-white px-2 pt-[var(--safe-top)]"
-        style={{ minHeight: 56 }}
-      >
-        <button className="tap flex items-center text-link" onClick={goBack}>
-          <ChevronLeft size={26} />
-          <span className="text-sm">{vi.tabs.more}</span>
-        </button>
-        <h1 className="text-base font-bold">{vi.categories.title}</h1>
-        <div className="flex">
-          {reorder ? (
-            <button
-              className="tap px-3 font-semibold text-link"
-              onClick={() => setReorder(false)}
-              data-testid="reorder-done"
-            >
-              {vi.categories.reorderDone}
-            </button>
-          ) : (
-            <>
+      <header className="flex flex-col gap-2.5 border-b border-divider bg-white px-2 pb-3 pt-[calc(var(--safe-top)+4px)]">
+        <div className="relative flex h-12 items-center">
+          <button
+            className="tap flex items-center gap-0.5 px-2 text-base text-primary"
+            onClick={goBack}
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} />
+            {vi.tabs.more}
+          </button>
+          <h1 className="pointer-events-none absolute inset-x-0 text-center text-[17px] font-bold">
+            {vi.categories.title}
+          </h1>
+          <div className="ml-auto flex">
+            {reorder ? (
               <button
-                className="tap flex items-center justify-center"
-                aria-label={vi.categories.sort}
-                onClick={() => setReorder(true)}
-                data-testid="reorder-toggle"
+                className="tap px-3 font-semibold text-primary"
+                onClick={() => setReorder(false)}
+                data-testid="reorder-done"
               >
-                <ArrowUpDown size={20} />
+                {vi.categories.reorderDone}
               </button>
-              <button
-                className="tap flex items-center justify-center text-link"
-                aria-label={vi.categories.add}
-                onClick={() => void navigate(`/more/categories/new?type=${type}`)}
-                data-testid="add-category"
-              >
-                <Plus size={24} />
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <button
+                  className="tap flex items-center justify-center text-primary"
+                  aria-label={vi.categories.sort}
+                  onClick={() => setReorder(true)}
+                  data-testid="reorder-toggle"
+                >
+                  <ArrowDownUp size={22} />
+                </button>
+                <button
+                  className="tap flex items-center justify-center text-primary"
+                  aria-label={vi.categories.add}
+                  onClick={() => void navigate(`/more/categories/new?type=${type}`)}
+                  data-testid="add-category"
+                >
+                  <Plus size={24} strokeWidth={2.2} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="mx-2">
+          <Segmented
+            value={type}
+            onChange={setType}
+            options={[
+              { value: 'expense', label: `${vi.categories.expenseTab} (${expense.length})` },
+              { value: 'income', label: `${vi.categories.incomeTab} (${income.length})` },
+            ]}
+          />
         </div>
       </header>
 
-      <div className="px-4 py-3">
-        <Segmented
-          value={type}
-          onChange={setType}
-          options={[
-            { value: 'expense', label: `${vi.categories.expenseTab}(${expense.length})` },
-            { value: 'income', label: `${vi.categories.incomeTab}(${income.length})` },
-          ]}
-        />
-      </div>
-
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-8">
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={list.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
@@ -185,11 +191,11 @@ export function CategoriesPage() {
             {showHidden && (
               <ul className="mt-2 space-y-2">
                 {hidden.map((c) => (
-                  <li key={c.id} className="card flex items-center gap-3 px-3 py-2 opacity-80">
+                  <li key={c.id} className={`${cardClass} opacity-80`}>
                     <CategoryIcon icon={c.icon} color={c.color} />
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
                     <button
-                      className="tap rounded-full px-3 text-sm font-semibold text-link"
+                      className="tap rounded-full px-3 text-sm font-semibold text-primary"
                       onClick={() => void setCategoryArchived(c.id, false)}
                     >
                       {vi.categories.restore}

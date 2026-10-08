@@ -18,16 +18,16 @@ interface Props {
 
 export function TxRow({ tx, category }: { tx: Transaction; category: Category | undefined }) {
   return (
-    <div className="flex min-h-[56px] items-center gap-3 px-4 py-2">
+    <div className="flex min-h-[64px] items-center gap-3 px-4 py-3">
       <CategoryIcon icon={category?.icon ?? 'ellipsis'} color={category?.color ?? '#9E9E9E'} />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{category?.name ?? '—'}</div>
-        {tx.note && <div className="truncate text-sm text-muted">{tx.note}</div>}
+        <div className="truncate text-base font-medium">{category?.name ?? '—'}</div>
+        {tx.note && <div className="truncate text-xs text-muted">{tx.note}</div>}
       </div>
       <Money
         value={tx.amount}
         expense={tx.type === 'expense'}
-        className={`shrink-0 font-semibold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}
+        className={`shrink-0 text-base font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}
       />
     </div>
   );
@@ -43,8 +43,8 @@ export function TxList({ groups, categories }: Props) {
     <div className="mx-4 mt-3 space-y-3">
       {groups.map((g) => (
         <section key={g.date} className="card overflow-hidden" aria-label={formatDayHeader(g.date)}>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-divider px-4 py-2 text-xs text-muted">
-            <span className="whitespace-nowrap font-semibold">{formatDayHeader(g.date)}</span>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 bg-[#F7F8FA] px-4 py-2.5 text-xs text-muted">
+            <span className="whitespace-nowrap">{formatDayHeader(g.date)}</span>
             <span className="flex gap-3 whitespace-nowrap">
               {g.expense > 0 && (
                 <span>

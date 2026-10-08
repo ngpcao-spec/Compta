@@ -25,8 +25,10 @@ function buzz() {
     navigator.vibrate(10);
 }
 
-const keyClass =
-  'tap flex h-14 items-center justify-center rounded-xl bg-white text-xl font-semibold active:bg-[#E6E8EE] select-none';
+const base =
+  'flex h-[54px] select-none items-center justify-center rounded-xl text-[22px] font-semibold';
+const digitClass = `${base} bg-bg text-ink active:bg-divider`;
+const opClass = `${base} bg-primary-tint !text-[20px] text-primary-dark active:brightness-95`;
 
 /** Touche à double fonction : tap = `tap`, appui long = `long` (+× et −÷). */
 function DualKey({
@@ -51,7 +53,7 @@ function DualKey({
   return (
     <button
       type="button"
-      className={`${keyClass} text-2xl text-link`}
+      className={opClass}
       data-testid={id}
       aria-label={`${tap} ${long}`}
       onPointerDown={() => {
@@ -100,7 +102,7 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
     <button
       key={k}
       type="button"
-      className={keyClass}
+      className={k === '000' ? `${digitClass} !text-[20px]` : digitClass}
       onClick={() => press(k)}
       data-testid={`key-${k}`}
     >
@@ -109,7 +111,7 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
   );
 
   return (
-    <div className="grid grid-cols-4 gap-2 bg-[#F2F3F7] p-2" role="group" aria-label={vi.tx.amount}>
+    <div className="grid grid-cols-4 gap-2" role="group" aria-label={vi.tx.amount}>
       {digit('7')}
       {digit('8')}
       {digit('9')}
@@ -123,7 +125,7 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
       {digit('3')}
       <button
         type="button"
-        className={keyClass}
+        className={opClass}
         aria-label={vi.keypad.backspace}
         data-testid="key-back"
         onClick={() => {
@@ -131,13 +133,13 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
           onExprChange(backspace(expr));
         }}
       >
-        <Delete size={22} />
+        <Delete size={24} />
       </button>
       {digit('000')}
       {digit('0')}
       <button
         type="button"
-        className={keyClass}
+        className={opClass}
         aria-label={vi.keypad.equals}
         data-testid="key-equals"
         onClick={equals}
@@ -147,7 +149,7 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
       <button
         type="button"
         disabled={okDisabled}
-        className="tap flex h-14 items-center justify-center rounded-xl bg-primary text-white active:bg-primary-dark disabled:opacity-40"
+        className={`${base} bg-primary text-white active:bg-primary-dark disabled:opacity-40`}
         aria-label={vi.keypad.ok}
         data-testid="key-ok"
         onClick={() => {
@@ -156,7 +158,7 @@ export function AmountKeypad({ expr, onExprChange, onSubmit, onError, okDisabled
           if (v !== null) onSubmit(v);
         }}
       >
-        <Check size={26} />
+        <Check size={26} strokeWidth={2.6} />
       </button>
     </div>
   );

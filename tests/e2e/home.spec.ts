@@ -44,7 +44,7 @@ test.describe('accueil et budget', () => {
     await page.getByRole('button', { name: 'Tháng sau' }).click();
     await expect(page.locator('header').first()).toContainText('thg 2 2026');
     await expect(page.getByTestId('budget-card')).toContainText('Ngân sách: 18,000,000'); // hérité de janvier
-    await expect(page.getByTestId('budget-card')).toContainText('Còn lại: 2,300,000'); // 18,000,000 − 15,700,000
+    await expect(page.getByTestId('budget-card')).toContainText('Còn lại: 6,000,000'); // 18,000,000 − 12,000,000
 
     await setBudget(page, '20000000'); // exception pour février
     await expect(page.getByTestId('budget-card')).toContainText('Ngân sách: 20,000,000');

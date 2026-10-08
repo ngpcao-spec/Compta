@@ -14,9 +14,9 @@ test.describe('catégories', () => {
   });
 
   test('compte les catégories par défaut (35 / 5)', async ({ page }) => {
-    await expect(page.getByRole('tab', { name: 'Chi tiêu(35)' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Thu nhập(5)' })).toBeVisible();
-    await page.getByRole('tab', { name: 'Thu nhập(5)' }).click();
+    await expect(page.getByRole('tab', { name: 'Chi tiêu (35)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Thu nhập (5)' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Thu nhập (5)' }).click();
     await expect(page.getByTestId('category-card')).toHaveCount(5);
   });
 
@@ -26,7 +26,7 @@ test.describe('catégories', () => {
     await page.getByLabel('Tên danh mục').fill('Thử nghiệm');
     await page.getByRole('radio', { name: 'dog' }).click();
     await page.getByTestId('save-category').click();
-    await expect(page.getByRole('tab', { name: 'Chi tiêu(36)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Chi tiêu (36)' })).toBeVisible();
     await expect(page.getByTestId('category-card').last()).toContainText('Thử nghiệm');
 
     // renommer
@@ -53,11 +53,11 @@ test.describe('catégories', () => {
     // archiver puis restaurer
     await page.getByRole('button', { name: 'Menu Đã đổi tên' }).click();
     await page.getByRole('button', { name: 'Ẩn', exact: true }).click();
-    await expect(page.getByRole('tab', { name: 'Chi tiêu(35)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Chi tiêu (35)' })).toBeVisible();
     await page.getByTestId('hidden-toggle').click();
     await expect(page.getByText('Đã đổi tên')).toBeVisible();
     await page.getByRole('button', { name: 'Khôi phục' }).click();
-    await expect(page.getByRole('tab', { name: 'Chi tiêu(36)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Chi tiêu (36)' })).toBeVisible();
   });
 
   test('l’ordre et les modifications survivent à un rechargement', async ({ page }) => {

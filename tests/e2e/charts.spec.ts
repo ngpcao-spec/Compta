@@ -11,11 +11,11 @@ test.describe('graphiques', () => {
     await expect(page.getByTestId('tile-expense')).toHaveText('-9,250,000');
     await expect(page.getByTestId('tile-balance')).toHaveText('28,750,000');
     await expect(page.getByTestId('tile-daily')).toHaveText('-4,625,000');
-    await expect(page.getByTestId('donut-total')).toHaveText('9,250,000');
+    await expect(page.getByTestId('donut-total')).toHaveText('-9,250,000');
     const ranking = page.getByTestId('ranking').getByRole('listitem');
     await expect(ranking.first()).toContainText('Quà tặng');
     await expect(ranking.first()).toContainText('40.0%');
-    await expect(ranking.first()).toContainText('3,700,000');
+    await expect(ranking.first()).toContainText('-3,700,000');
 
     // clic sur une catégorie → transactions filtrées
     await ranking.first().getByRole('button').click();

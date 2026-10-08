@@ -1,20 +1,21 @@
 :root {
-  --primary: #2f8fed; /* en-tête, boutons, accents */
-  --primary-dark: #1e78d6; /* dégradé en-tête */
-  --income: #2196f3;
-  --income-text: #1a73c9; /* variante de --income pour le texte (contraste ≥ 4,5:1) ; --income reste pour courbes et anneaux */
+  /* Valeurs des maquettes : toutes passent WCAG AA en texte (voir DECISIONS.md). */
+  --primary: #1a6ed8; /* en-tête, boutons, accents */
+  --primary-dark: #1559b0; /* survol / touches d'opérateurs */
+  --primary-tint: #e3eefb; /* touches d'opérateurs du clavier */
+  --income: #1976d2;
   --expense: #1f2329; /* montants de dépense */
   --danger: #e53935;
+  --danger-ink: #c62828; /* texte rouge (contraste ≥ 4,5:1) */
   --bg: #f2f3f7; /* fond d'app */
   --card: #ffffff;
   --text: #1f2329;
-  --text-muted: #8a8f98;
-  --text-muted-aa: #636a73; /* texte secondaire : contraste ≥ 4,5:1 (le jeton de la spec, 3,2:1, sert aux éléments non textuels) */
+  --text-muted: #646b78; /* maquette #6B7280, légèrement foncé : ≥ 4,5:1 aussi sur fond gris */
   --divider: #ecedf1;
   --radius-card: 16px;
   --radius-pill: 999px;
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.04);
-  --tabbar-h: 64px;
+  --shadow-card: 0 2px 10px rgb(16 24 40 / 0.06);
+  --tabbar-h: 62px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
 }

@@ -39,7 +39,7 @@ export function HomePage() {
           <NotebookPen size={56} strokeWidth={1.25} />
           <p>{vi.home.empty}</p>
           <button
-            className="tap rounded-full bg-primary-dark px-5 font-semibold text-white"
+            className="tap rounded-full bg-primary px-5 font-semibold text-white"
             onClick={() => void navigate('/tx/new')}
           >
             {vi.home.emptyAdd}

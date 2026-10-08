@@ -28,7 +28,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-[rgb(15_23_42/0.45)]"
         style={{ animation: 'fade-in 150ms ease-out' }}
         onClick={onClose}
         aria-hidden="true"
@@ -37,7 +37,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title ?? vi.common.menu}
-        className="relative w-full max-w-[480px] rounded-t-[20px] bg-white pb-[var(--safe-bottom)] shadow-xl"
+        className="relative w-full max-w-[480px] rounded-t-[24px] bg-white pb-[max(var(--safe-bottom),20px)] shadow-[0_-8px_30px_rgb(0_0_0/0.12)]"
         style={{
           transform: `translateY(${dy}px)`,
           animation: dy === 0 ? 'sheet-in 200ms ease-out' : undefined,
@@ -59,7 +59,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
             if (shouldClose) onClose();
           }}
         >
-          <span className="h-1 w-10 rounded-full bg-divider" />
+          <span className="h-[5px] w-10 rounded-full bg-[#D5D8DE]" />
         </div>
         {children}
       </section>

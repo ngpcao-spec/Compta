@@ -174,3 +174,15 @@ export function yearSummary(txs: readonly TxLite[], year: number, today: string)
 }
 
 export { addMonths };
+
+/** Axe « propre » (0, pas, 2×pas…) couvrant `maxValue` avec environ `tickCount` graduations. */
+export function niceAxis(maxValue: number, tickCount = 3): { max: number; ticks: number[] } {
+  if (!(maxValue > 0)) return { max: 1_000_000, ticks: [0, 1_000_000] };
+  const raw = maxValue / tickCount;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = ([1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag) as number;
+  const top = Math.ceil(maxValue / step) * step;
+  const ticks: number[] = [];
+  for (let v = 0; v <= top + step / 2; v += step) ticks.push(Math.round(v));
+  return { max: top, ticks };
+}

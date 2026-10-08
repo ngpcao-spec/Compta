@@ -22,6 +22,7 @@ function BudgetForm({ month, current, onClose }: Omit<Props, 'open'>) {
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
   const preview = evaluate(expr === '' ? '0' : expr);
+  const operator = hasOperator(expr);
 
   const submit = async (value: number) => {
     try {
@@ -35,39 +36,55 @@ function BudgetForm({ month, current, onClose }: Omit<Props, 'open'>) {
   };
 
   return (
-    <>
-      <div className="px-4 pb-2">
-        <h2 className="text-lg font-bold">{vi.budget.title}</h2>
-        <p className="text-sm text-muted">{formatMonthVi(month)}</p>
-        <p className="mt-3 text-4xl font-bold text-link" data-testid="budget-amount">
-          {expr === '' ? '0' : formatExpr(expr)}
+    <div className="flex flex-col gap-3.5 px-4 pb-2">
+      <div className="flex items-center">
+        <button
+          className="tap min-w-[60px] text-left text-[15px] font-medium text-primary"
+          onClick={onClose}
+        >
+          {vi.common.cancel}
+        </button>
+        <div className="flex flex-1 flex-col items-center gap-0.5">
+          <h2 className="text-lg font-bold">{vi.budget.title}</h2>
+          <span className="text-[13px] text-muted">{formatMonthVi(month)}</span>
+        </div>
+        <span className="min-w-[60px]" />
+      </div>
+
+      <div className="pt-3 text-center">
+        <p
+          className="text-[44px] font-bold leading-tight tracking-[-0.5px] text-primary"
+          data-testid="budget-amount"
+        >
+          {operator && preview.ok ? formatVnd(preview.value) : expr === '' ? '0' : formatExpr(expr)}
         </p>
-        {hasOperator(expr) && preview.ok && (
-          <p className="text-sm text-muted">= {formatVnd(preview.value)}</p>
+        {operator && (
+          <p className="text-sm text-muted">{formatExpr(expr).replace(/([+−×÷])/g, ' $1 ')}</p>
         )}
         <p className="mt-1 text-xs text-muted">{vi.budget.zeroHint}</p>
-        <label className="mt-3 flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-[var(--primary)]"
-            checked={future}
-            onChange={(e) => setFuture(e.target.checked)}
-          />
-          {vi.budget.applyFuture}
-        </label>
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-danger">
-            {error}
-          </p>
-        )}
       </div>
+
+      <label className="flex items-center gap-2.5 rounded-xl bg-bg px-3.5 py-3 text-sm">
+        <input
+          type="checkbox"
+          className="h-5 w-5 accent-[var(--primary)]"
+          checked={future}
+          onChange={(e) => setFuture(e.target.checked)}
+        />
+        <span>{vi.budget.applyFuture}</span>
+      </label>
+      {error && (
+        <p role="alert" className="text-sm text-danger-ink">
+          {error}
+        </p>
+      )}
       <AmountKeypad
         expr={expr}
         onExprChange={setExpr}
         onSubmit={(v) => void submit(v)}
         onError={setError}
       />
-    </>
+    </div>
   );
 }
 

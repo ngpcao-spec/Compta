@@ -2,10 +2,15 @@
 
 Format : date — contexte — choix — alternative écartée.
 
-## 2026-10-08 — Maquettes absentes
-Contexte : `docs/mockups/*.jpg` n'ont pas été fournies (seuls SPEC.md, CLAUDE.md, SETUP.md).
-Choix : implémenter d'après SPEC.md (qui prime sur les maquettes en cas de conflit) ; les comparaisons visuelles de §« boucle de jalon » sont remplacées par des captures Playwright 390×844 revues pour cohérence avec SPEC §3 et §8. Les captures seront à comparer aux maquettes quand elles seront ajoutées.
-Écartée : attendre les maquettes.
+## 2026-10-08 — Maquettes (canevas de design HTML)
+Contexte : les maquettes ont été fournies après M10 sous forme d'un canevas de design (10 écrans HTML), pas de 5 JPG. Elles sont rendues dans `docs/mockups/` et comparées côte à côte à l'implémentation (`docs/comparisons/`).
+Choix : l'interface a été alignée sur elles (en-tête bleu uni, saisie en deux temps avec feuille de montant, clavier à touches claires, tableaux et cartes). Écarts conservés, SPEC.md primant :
+- **Hàng ngày** : la maquette affiche -298,387 (mois entier) ; la spec (§3.7) divise par les jours écoulés, d'où -4,625,000 pour le 2 janvier. Formule de la spec conservée.
+- **Couleurs des 10 premières catégories** : la maquette utilise des teintes légèrement différentes (ex. Ăn uống #F9A825) de la table §4 (#FBC02D). Table de la spec conservée (migration déjà appliquée). La palette du sélecteur de couleur reprend celle de la maquette.
+- **« Áp dụng cho các tháng sau »** : décochée par défaut (la maquette l'affiche cochée) pour ne pas modifier le budget par défaut par inadvertance.
+- **Jetons de couleur** : la maquette (#1A6ED8, #6B7280, #1976D2) passe WCAG AA, pas les jetons de la spec (#2F8FED…). Valeurs de la maquette adoptées ; le gris secondaire est assombri à #646B78 pour rester ≥ 4,5:1 sur fond gris.
+- Le texte du segment est `Chi tiêu (35)` (avec espace) comme la maquette.
+Écartée : conserver l'interface « spec seule » (échecs d'accessibilité axe sur les jetons d'origine).
 
 ## 2026-10-08 — Docker indisponible dans l'environnement cloud
 Contexte : le démon Docker ne tourne pas, donc pas de `supabase start`.
@@ -44,18 +49,14 @@ SPEC §6.6 prévoit un `lastPulledAt` unique ; un curseur par table (`cursor:<ta
 ## 2026-10-08 — Validation de ✓ du clavier
 « ✓ évalue puis valide » : une expression en cours est évaluée puis enregistrée dans le même appui ; l'aperçu `= résultat` est affiché pendant la saisie. ✓ est désactivé tant que montant = 0 ou catégorie absente (saisie de transaction).
 
-## 2026-10-08 — Contrastes (accessibilité, M10)
-Contexte : `--text-muted #8A8F98` (3,2:1), `--income #2196F3` et `--primary #2F8FED` (≈3,4:1) échouent WCAG AA pour du texte courant (audit axe).
-Choix : on garde les jetons de la spec pour les éléments graphiques (courbes, anneaux, fonds), et on ajoute `--text-muted-aa #636A73` (texte secondaire), `--income-text #1A73C9` (montants/liens bleus) et on utilise `--primary-dark` pour les boutons à libellé blanc. L'écart visuel avec les maquettes est léger.
-
-## 2026-10-08 — Jeu de démonstration février–juillet
-Les maquettes (tableau « Xu hướng ») n'ont pas été fournies : valeurs plausibles (voir `src/sync/demoData.ts`). Janvier 2026 respecte exactement la spec (38,000,000 / 9,250,000 / 28,750,000, budget 18,000,000).
+## 2026-10-08 — Jeu de démonstration
+`src/sync/demoData.ts` reprend exactement la maquette : janvier 2026 (38,000,000 / 9,250,000 / 28,750,000, budget 18,000,000) et le tableau « Xu hướng » de février à juillet (année : 228,000,000 / -101,250,000 / 126,750,000 ; moyenne mensuelle 32,571,429 / -14,464,286 / 18,107,143).
 
 ## 2026-10-08 — date-fns non utilisé
 La spec liste date-fns, mais tout le formatage (`thg`, `ngày`) et l'arithmétique de mois sont faits sur des chaînes `YYYY-MM-DD` dans `src/lib/dates.ts` (testés) ; dépendance retirée.
 
 ## 2026-10-08 — Lighthouse
-Mesuré sur `/login` (seule page accessible sans session) avec le build de production, profil mobile : performance 96, accessibilité 100, bonnes pratiques 100, SEO 100. Les écrans authentifiés sont couverts par axe (aucune violation serious/critical) et par la taille de bundle (route graphiques et catégories chargées à la demande).
+Mesuré sur `/login` (seule page accessible sans session) avec le build de production, profil mobile : performance 94, accessibilité 100, bonnes pratiques 100, SEO 100. Les écrans authentifiés sont couverts par axe (aucune violation serious/critical) et par la taille de bundle (route graphiques et catégories chargées à la demande).
 
 ## 2026-10-08 — OAuth iOS en mode standalone
 Non vérifiable ici (pas d'iPhone ni de projet Supabase). `/login` détecte le mode standalone iOS et affiche la consigne prévue ; le comportement réel reste à constater sur appareil (voir PROGRESS.md).

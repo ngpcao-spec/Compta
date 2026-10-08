@@ -19,32 +19,29 @@ function makeLabel(items: readonly CategoryShare[]) {
   return function renderLabel(p: LabelProps) {
     const percent = items[p.index]?.percent ?? 0;
     if (percent < 5) return null;
-    return labelNode(p, percent);
+    const r = p.outerRadius + 16;
+    const x = p.cx + r * Math.cos(-p.midAngle * RAD);
+    const y = p.cy + r * Math.sin(-p.midAngle * RAD);
+    return (
+      <text x={x} y={y} textAnchor={x > p.cx ? 'start' : 'end'} fontSize={12} fill="#1F2329">
+        <tspan x={x} dy="-0.2em" fontWeight={600}>{`${percent.toFixed(1)}%`}</tspan>
+        <tspan x={x} dy="1.25em" fill="#4B5563">
+          {p.name}
+        </tspan>
+      </text>
+    );
   };
-}
-
-function labelNode(p: LabelProps, percent: number) {
-  const r = p.outerRadius + 16;
-  const x = p.cx + r * Math.cos(-p.midAngle * RAD);
-  const y = p.cy + r * Math.sin(-p.midAngle * RAD);
-  const anchor = x > p.cx ? 'start' : 'end';
-  return (
-    <text x={x} y={y} textAnchor={anchor} fontSize={11} fill="#1F2329">
-      <tspan x={x} dy="-0.2em" fontWeight={600}>{`${percent.toFixed(1)}%`}</tspan>
-      <tspan x={x} dy="1.2em" fill="#8A8F98">
-        {p.name}
-      </tspan>
-    </text>
-  );
 }
 
 interface Props {
   items: CategoryShare[];
   total: number;
+  /** dépenses : le total central porte le signe « - » (maquette) */
+  expense: boolean;
 }
 
 /** Donut avec total au centre, étiquettes externes pour les parts ≥ 5 %, noms des petites parts dessous. */
-export function CategoryDonut({ items, total }: Props) {
+export function CategoryDonut({ items, total, expense }: Props) {
   const text = useAmountText();
   const small = items.filter((i) => i.percent < 5);
   return (
@@ -73,8 +70,8 @@ export function CategoryDonut({ items, total }: Props) {
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xs text-muted">{vi.charts.total}</span>
-          <span className="text-base font-bold" data-testid="donut-total">
-            {text(total)}
+          <span className="text-[15px] font-bold" data-testid="donut-total">
+            {text(total, expense)}
           </span>
         </div>
       </div>

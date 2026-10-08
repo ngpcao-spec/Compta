@@ -46,7 +46,8 @@ test.describe('transactions', () => {
     await page.getByTestId('key-plus').click();
     await page.getByTestId('key-3').click();
     await page.getByTestId('key-000').click();
-    await expect(page.getByTestId('amount-display')).toHaveText('5,000+3,000');
+    await expect(page.getByTestId('expr-display')).toHaveText('5,000 + 3,000');
+    await expect(page.getByTestId('amount-display')).toHaveText('8,000');
     await page.getByTestId('key-ok').click();
     await expect(page.getByTestId('tx-row')).toContainText('-8,000');
   });
