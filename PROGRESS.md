@@ -26,7 +26,7 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 - Relié à `ngpcao-spec/Compta` (framework Vite, `npm run build`), variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` en Production et Preview.
 - URL de production : **https://so-thu-chi-vietgolf.vercel.app**
 - Protection Vercel : limitée aux aperçus (la production doit être publique pour l'app et le retour OAuth).
-- Branche de production : la seule branche du dépôt est `claude/ecstatic-johnson-9kiz30` ; créer `main` et la définir comme branche par défaut avant de fusionner.
+- Branche de production : `main` (réglée dans Vercel → Settings → Environments → Production). Les envois sur `claude/ecstatic-johnson-9kiz30` ne créent que des aperçus protégés ; pour publier, fusionner dans `main`.
 
 ## Vérifié en production (https://so-thu-chi-vietgolf.vercel.app, projet Supabase `Compta`)
 - Connexion Google (client OAuth dédié « Sổ Thu Chi ») : OK sur iPhone ; création automatique du profil + 35 dépenses + 5 revenus.
@@ -35,6 +35,6 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 
 ## Points ouverts
 1. **Installation iPhone (PWA)** : ajouter à l'écran d'accueil et vérifier que la session Google est conservée au lancement depuis l'icône ; consigner le résultat dans `DECISIONS.md` (point de vigilance SPEC §9).
-2. **Branche par défaut** : le dépôt n'a que `claude/ecstatic-johnson-9kiz30` ; créer `main` et la définir par défaut avant de fusionner (la production Vercel suit la branche de production du projet).
+2. **Branche par défaut GitHub** : `main` existe ; la définir comme branche par défaut (Settings → General → Default branch) si ce n'est pas déjà fait.
 3. **Sauvegarde de la clé Google** : le secret du client OAuth n'est plus consultable dans Google Cloud ; il ne vit que dans Supabase.
 4. **Réseau de l'environnement cloud** : `*.supabase.co` et `*.vercel.app` sont refusés par le proxy (les tests en direct se font depuis l'appareil de l'utilisateur).
