@@ -68,6 +68,16 @@ export const vi = {
     scrollHint: (n: number) => `Cuộn để xem tất cả ${n} danh mục`,
     amount: 'Số tiền',
   },
+  scan: {
+    button: 'Quét hóa đơn',
+    offline: 'Cần kết nối mạng để quét hóa đơn',
+    reading: 'Đang đọc hóa đơn…',
+    cancel: 'Hủy',
+    added: (amount: string, category: string) => `Đã thêm ${amount} vào ${category}`,
+    edit: 'Sửa',
+    failed: 'Không đọc được hóa đơn, vui lòng kiểm tra',
+    quota: (n: number) => `Đã hết ${n} lượt quét hôm nay. Vui lòng nhập thủ công.`,
+  },
   budget: {
     title: 'Chỉnh sửa ngân sách',
     applyFuture: 'Áp dụng cho các tháng sau',

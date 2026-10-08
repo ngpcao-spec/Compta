@@ -7,7 +7,7 @@ if (process.env.VITE_E2E === '1') {
   process.exit(0);
 }
 const dir = 'dist/assets';
-const markers = ['stc.e2e.server', 'stc.e2e.user', '__stc', 'e2e-login'];
+const markers = ['stc.e2e.server', 'stc.e2e.user', '__stc', 'e2e-login', 'stc.e2e.scan'];
 const bad = [];
 for (const f of readdirSync(dir)) {
   if (!f.endsWith('.js')) continue;
