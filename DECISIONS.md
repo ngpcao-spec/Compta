@@ -12,9 +12,10 @@ Contexte : le démon Docker ne tourne pas, donc pas de `supabase start`.
 Choix : (1) les tests SQL (RLS, triggers, 35+5 catégories) tournent dans Vitest avec PGlite (Postgres WASM) et un schéma `auth` simulé ; (2) les e2e Playwright tournent avec `VITE_E2E=1`, qui remplace le transport Supabase par un backend en mémoire (`src/sync/fakeTransport.ts`) et affiche le bouton de connexion de test. Le bouton et le faux transport sont exclus du build de production (`import.meta.env.VITE_E2E` statiquement faux → code mort éliminé).
 Écartée : e2e contre un Supabase distant (risque sur des données réelles, secrets en CI).
 
-## 2026-10-08 — Types Supabase écrits à la main
-Contexte : le projet Supabase n'est pas créé (coût, voir PROGRESS.md), donc pas de génération.
-Choix : `src/types/supabase.ts` écrit au format généré, aligné sur la migration ; à régénérer par `npm run gen:types`.
+## 2026-10-08 — Projet Supabase `Compta` (réf. jtiepqlakyyraimjiikw)
+Contexte : le projet n'a pas été créé par moi (coût, accord requis par CLAUDE.md) ; l'humain l'a créé sous le nom « Compta » (et non `so-thu-chi`), région ap-southeast-1, plan Pro.
+Choix : réutilisé tel quel. Migration `0001_init` appliquée, Edge Function `delete-account` déployée (verify_jwt), types générés dans `src/types/supabase.ts`, advisors sécurité vides.
+Vérifié en base : nouvel utilisateur = profil + 35 dépenses + 5 revenus ; un autre utilisateur ne voit aucune de ses lignes (bloc SQL annulé par exception, aucune donnée résiduelle).
 
 ## 2026-10-08 — Versions de dépendances
 Contexte : l'installation résout des versions récentes (Vite 8, TypeScript 6, React Router 8, ESLint 10, lucide-react 1.x).

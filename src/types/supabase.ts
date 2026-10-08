@@ -1,74 +1,188 @@
-// Types alignés sur supabase/migrations. À régénérer avec `npm run gen:types`
-// dès que le projet Supabase existe (voir DECISIONS.md).
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-type ProfileRow = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  hide_amounts: boolean;
-  default_budget: number | null;
-  updated_at: string;
-  server_updated_at: string;
-};
-type CategoryRow = {
-  id: string;
-  user_id: string;
-  type: 'expense' | 'income';
-  name: string;
-  icon: string;
-  color: string;
-  sort_order: number;
-  archived: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  server_updated_at: string;
-};
-type TransactionRow = {
-  id: string;
-  user_id: string;
-  category_id: string;
-  type: 'expense' | 'income';
-  amount: number;
-  note: string | null;
-  occurred_on: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  server_updated_at: string;
-};
-type BudgetRow = {
-  id: string;
-  user_id: string;
-  month: string;
-  amount: number;
-  updated_at: string;
-  deleted_at: string | null;
-  server_updated_at: string;
-};
-
-type TableDef<R, Required extends keyof R> = {
-  Row: R;
-  Insert: Pick<R, Required> & Partial<Omit<R, Required>>;
-  Update: Partial<R>;
-  Relationships: [];
-};
-
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.18';
+  };
   public: {
     Tables: {
-      profiles: TableDef<ProfileRow, 'id'>;
-      categories: TableDef<CategoryRow, 'id' | 'user_id' | 'type' | 'name' | 'icon' | 'color'>;
-      transactions: TableDef<
-        TransactionRow,
-        'id' | 'user_id' | 'category_id' | 'type' | 'amount' | 'occurred_on'
-      >;
-      budgets: TableDef<BudgetRow, 'id' | 'user_id' | 'month' | 'amount'>;
+      budgets: {
+        Row: {
+          amount: number;
+          deleted_at: string | null;
+          id: string;
+          month: string;
+          server_updated_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          deleted_at?: string | null;
+          id: string;
+          month: string;
+          server_updated_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          deleted_at?: string | null;
+          id?: string;
+          month?: string;
+          server_updated_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      categories: {
+        Row: {
+          archived: boolean;
+          color: string;
+          created_at: string;
+          deleted_at: string | null;
+          icon: string;
+          id: string;
+          name: string;
+          server_updated_at: string;
+          sort_order: number;
+          type: Database['public']['Enums']['tx_type'];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          archived?: boolean;
+          color: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          icon: string;
+          id: string;
+          name: string;
+          server_updated_at?: string;
+          sort_order?: number;
+          type: Database['public']['Enums']['tx_type'];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          archived?: boolean;
+          color?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          icon?: string;
+          id?: string;
+          name?: string;
+          server_updated_at?: string;
+          sort_order?: number;
+          type?: Database['public']['Enums']['tx_type'];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          avatar_url: string | null;
+          default_budget: number | null;
+          display_name: string | null;
+          hide_amounts: boolean;
+          id: string;
+          server_updated_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          default_budget?: number | null;
+          display_name?: string | null;
+          hide_amounts?: boolean;
+          id: string;
+          server_updated_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          avatar_url?: string | null;
+          default_budget?: number | null;
+          display_name?: string | null;
+          hide_amounts?: boolean;
+          id?: string;
+          server_updated_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      transactions: {
+        Row: {
+          amount: number;
+          category_id: string;
+          created_at: string;
+          deleted_at: string | null;
+          id: string;
+          note: string | null;
+          occurred_on: string;
+          server_updated_at: string;
+          type: Database['public']['Enums']['tx_type'];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          category_id: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          id: string;
+          note?: string | null;
+          occurred_on: string;
+          server_updated_at?: string;
+          type: Database['public']['Enums']['tx_type'];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          category_id?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          note?: string | null;
+          occurred_on?: string;
+          server_updated_at?: string;
+          type?: Database['public']['Enums']['tx_type'];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'transactions_category_id_fkey';
+            columns: ['category_id'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: { tx_type: 'expense' | 'income' };
-    CompositeTypes: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      tx_type: 'expense' | 'income';
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
 };
+
+export const Constants = {
+  public: {
+    Enums: {
+      tx_type: ['expense', 'income'],
+    },
+  },
+} as const;

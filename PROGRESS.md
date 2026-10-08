@@ -16,18 +16,19 @@
 
 Contrôles : `npm run check` (71 tests) · `npm run e2e` (26 tests) · `npm run build`.
 
+## Infrastructure Supabase (projet `Compta`, réf. `jtiepqlakyyraimjiikw`)
+- URL : https://jtiepqlakyyraimjiikw.supabase.co · région ap-southeast-1
+- Migration `init` appliquée ; advisors sécurité : aucun ; performance : infos seulement (index pas encore utilisés, stratégie de connexions Auth).
+- Edge Function `delete-account` déployée (JWT requis).
+- `.env.local` écrit (clé publishable, ignoré par git) ; `.env.example` à jour.
+
 ## Points ouverts (actions humaines)
-1. **Supabase — accord de coût requis.** L'organisation « ngpcao@gmail.com's Org » est en plan **Pro** et compte déjà 3 projets (2 actifs). Créer `so-thu-chi` (ap-southeast-1) ajoute un projet facturable (compute Micro, environ 10 USD/mois, partiellement couvert par le crédit Pro). Aucune création tant que tu n'as pas dit oui. Alternative : réutiliser un projet existant (déconseillé : mélange de données).
-2. **Google OAuth** : à fournir quand le projet existe (voir SETUP.md §2).
-3. **Vercel** : aucun outil Vercel ni CLI dans cet environnement ; le projet doit être relié au dépôt GitHub depuis ton compte.
-4. **Maquettes** : `docs/mockups/*.jpg` à ajouter.
-5. **Déploiement** — commandes exactes une fois Supabase prêt :
-   ```bash
-   # 1. projet Supabase (après accord sur le coût) puis, avec la CLI et un token d'accès :
-   supabase link --project-ref <ref> && supabase db push
-   supabase functions deploy delete-account
-   SUPABASE_PROJECT_REF=<ref> npm run gen:types
-   # 2. auth : activer Google (client id/secret), site_url = URL Vercel, uri_allow_list = localhost:5173 + URL Vercel
-   # 3. Vercel : importer le dépôt (framework Vite), variables VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY (Production + Preview)
-   ```
-6. **OAuth iOS standalone** : à vérifier sur un iPhone après déploiement et à consigner dans `DECISIONS.md`.
+1. **Google OAuth** : créer le client (SETUP.md §2) avec
+   - URI de redirection : `https://jtiepqlakyyraimjiikw.supabase.co/auth/v1/callback`
+   - origines JavaScript : `http://localhost:5173` et l'URL de production,
+   puis activer Google dans Supabase (Authentication → Providers) avec l'ID client et le secret.
+2. **Auth → URL Configuration** : Site URL = URL de production ; Redirect URLs = `http://localhost:5173/**` + URL de production.
+3. **Vercel** : importer le dépôt (framework Vite), variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (Production + Preview) — valeurs dans `.env.local`. Aucun outil Vercel dans l'environnement.
+4. **Maquettes** : `docs/mockups/*.jpg` à ajouter (comparaison visuelle en attente).
+5. **OAuth iOS standalone** : à vérifier sur un iPhone après déploiement et à consigner dans `DECISIONS.md`.
+6. **Réseau de l'environnement cloud** : `*.supabase.co` est refusé par le proxy, donc aucun test en direct depuis la session (le MCP fonctionne). Pour en faire : Network access → autoriser `*.supabase.co`.
