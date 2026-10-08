@@ -27,3 +27,34 @@ Choix : le moteur de synchro traite aussi `profiles` (une ligne, `update` seulem
 ## 2026-10-08 — Résolution du budget d'un mois
 Contexte : SPEC §3.4 combine héritage du mois antérieur et `default_budget`.
 Choix : ligne du mois > `default_budget` > ligne du mois antérieur le plus récent. Cocher « Áp dụng cho các tháng sau » écrit `default_budget` et supprime (logiquement) la ligne du mois courant pour qu'elle suive le défaut.
+
+## 2026-10-08 — Index composé Dexie omis
+Contexte : SPEC §6.6 demande `[deleted_at+occurred_on]`. IndexedDB ne peut pas indexer `null` : toute ligne active (deleted_at = null) serait absente de l'index.
+Choix : index simple sur `occurred_on`, filtre `deleted_at` en mémoire (volumes personnels, quelques milliers de lignes).
+
+## 2026-10-08 — Identifiant de budget déterministe
+Contexte : `budgets` a `unique (user_id, month)`. Deux appareils créant le budget d'un même mois hors ligne avec des UUID aléatoires feraient échouer la synchro indéfiniment.
+Choix : `id = uuid(SHA-256(user_id:mois))` (forme v4), calculé côté client ; un seul identifiant possible par mois.
+Écartée : `onConflict: 'user_id,month'` (deux lignes locales pour un mois côté autre appareil).
+
+## 2026-10-08 — Curseurs de pull par table
+SPEC §6.6 prévoit un `lastPulledAt` unique ; un curseur par table (`cursor:<table>` dans `meta`) évite qu'une table lente fasse sauter des lignes d'une autre. `server_updated_at` utilise `clock_timestamp()` (pas `now()`) pour rester monotone entre transactions concurrentes.
+
+## 2026-10-08 — Validation de ✓ du clavier
+« ✓ évalue puis valide » : une expression en cours est évaluée puis enregistrée dans le même appui ; l'aperçu `= résultat` est affiché pendant la saisie. ✓ est désactivé tant que montant = 0 ou catégorie absente (saisie de transaction).
+
+## 2026-10-08 — Contrastes (accessibilité, M10)
+Contexte : `--text-muted #8A8F98` (3,2:1), `--income #2196F3` et `--primary #2F8FED` (≈3,4:1) échouent WCAG AA pour du texte courant (audit axe).
+Choix : on garde les jetons de la spec pour les éléments graphiques (courbes, anneaux, fonds), et on ajoute `--text-muted-aa #636A73` (texte secondaire), `--income-text #1A73C9` (montants/liens bleus) et on utilise `--primary-dark` pour les boutons à libellé blanc. L'écart visuel avec les maquettes est léger.
+
+## 2026-10-08 — Jeu de démonstration février–juillet
+Les maquettes (tableau « Xu hướng ») n'ont pas été fournies : valeurs plausibles (voir `src/sync/demoData.ts`). Janvier 2026 respecte exactement la spec (38,000,000 / 9,250,000 / 28,750,000, budget 18,000,000).
+
+## 2026-10-08 — date-fns non utilisé
+La spec liste date-fns, mais tout le formatage (`thg`, `ngày`) et l'arithmétique de mois sont faits sur des chaînes `YYYY-MM-DD` dans `src/lib/dates.ts` (testés) ; dépendance retirée.
+
+## 2026-10-08 — Lighthouse
+Mesuré sur `/login` (seule page accessible sans session) avec le build de production, profil mobile : performance 96, accessibilité 100, bonnes pratiques 100, SEO 100. Les écrans authentifiés sont couverts par axe (aucune violation serious/critical) et par la taille de bundle (route graphiques et catégories chargées à la demande).
+
+## 2026-10-08 — OAuth iOS en mode standalone
+Non vérifiable ici (pas d'iPhone ni de projet Supabase). `/login` détecte le mode standalone iOS et affiche la consigne prévue ; le comportement réel reste à constater sur appareil (voir PROGRESS.md).

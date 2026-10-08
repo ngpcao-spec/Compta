@@ -20,6 +20,7 @@ export const vi = {
     year: 'Năm',
     month: 'Tháng',
     menu: 'Menu',
+    retry: 'Thử lại',
   },
   login: {
     title: 'Sổ Thu Chi',
@@ -129,6 +130,8 @@ export const vi = {
     exportCsv: 'Xuất CSV',
     hideAmounts: 'Ẩn số tiền',
     signOut: 'Đăng xuất',
+    signOutPending: (n: number) =>
+      `Còn ${n} thay đổi chưa đồng bộ. Đăng xuất sẽ làm mất các thay đổi này.`,
     deleteAccount: 'Xóa tài khoản',
     deleteAccountWarn: 'Toàn bộ dữ liệu của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.',
     deleteAccountPrompt: 'Nhập XÓA để xác nhận',

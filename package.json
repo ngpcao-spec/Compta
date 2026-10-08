@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-no-e2e.mjs",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -15,14 +15,14 @@
     "e2e": "playwright test",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "gen:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/types/supabase.ts",
-    "gen:icons": "pwa-assets-generator"
+    "gen:icons": "pwa-assets-generator",
+    "build:e2e": "VITE_E2E=1 tsc --noEmit && VITE_E2E=1 vite build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.117.3",
-    "date-fns": "^4.4.0",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.52.0",
@@ -32,6 +32,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.0",
