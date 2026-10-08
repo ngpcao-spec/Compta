@@ -33,9 +33,10 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 ## Scan de facture par IA (SPEC §3.10) — branche `claude/ecstatic-johnson-9kiz30`, PR vers `main` (non fusionnée, en attente d'un OK)
 
 - Code et tests (unitaires, fonction avec OpenAI simulé, SQL, e2e) : faits. Détails dans `DECISIONS.md`.
-- Migration `0002_receipt_scans` et Edge Function `scan-receipt` : à déployer sur le projet Supabase `Compta` (statut mis à jour ci-dessous).
-- Secrets : `OPENAI_MODEL`, puis `OPENAI_API_KEY` (la fonction répond `not_configured` tant que la clé manque).
-- Aperçu Vercel de la branche à tester sur iPhone. Prérequis OAuth : ajouter `https://so-thu-chi-git-*-vietgolf.vercel.app/**` aux Redirect URLs de Supabase, sinon la connexion Google renvoie vers la production.
+- PR : https://github.com/ngpcao-spec/Compta/pull/2 (ne pas fusionner sans accord explicite).
+- Migration `0002_receipt_scans` et Edge Function `scan-receipt` : **déployées** sur le projet Supabase `Compta` (migration `receipt_scans`, fonction v1, JWT requis).
+- Secrets : `OPENAI_API_KEY` à poser par l'utilisateur dans Supabase (Edge Functions → Secrets) ; `OPENAI_MODEL` facultatif (défaut `gpt-5.4-mini`). La fonction répond `not_configured` tant que la clé manque.
+- Aperçu Vercel de la branche, à tester sur iPhone : https://so-thu-chi-git-claude-ecstatic-johnson-9kiz30-vietgolf.vercel.app (protégé : connexion Vercel requise). Prérequis OAuth : ajouter `https://so-thu-chi-git-*-vietgolf.vercel.app/**` aux Redirect URLs de Supabase, sinon la connexion Google renvoie vers la production.
 
 ## Vérifié en production (https://so-thu-chi-vietgolf.vercel.app, projet Supabase `Compta`)
 
