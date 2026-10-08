@@ -22,12 +22,17 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 - Edge Function `delete-account` déployée (JWT requis).
 - `.env.local` écrit (clé publishable, ignoré par git) ; `.env.example` à jour.
 
+## Vercel (projet `so-thu-chi`, id prj_TSRKFKaYCHBfdy8pre7YwJRmgpGn)
+- Relié à `ngpcao-spec/Compta` (framework Vite, `npm run build`), variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` en Production et Preview.
+- URL de production : **https://so-thu-chi-vietgolf.vercel.app**
+- Protection Vercel : limitée aux aperçus (la production doit être publique pour l'app et le retour OAuth).
+- Branche de production : la seule branche du dépôt est `claude/ecstatic-johnson-9kiz30` ; créer `main` et la définir comme branche par défaut avant de fusionner.
+
 ## Points ouverts (actions humaines)
 1. **Google OAuth** : créer le client (SETUP.md §2) avec
    - URI de redirection : `https://jtiepqlakyyraimjiikw.supabase.co/auth/v1/callback`
-   - origines JavaScript : `http://localhost:5173` et l'URL de production,
+   - origines JavaScript : `http://localhost:5173` et `https://so-thu-chi-vietgolf.vercel.app`,
    puis activer Google dans Supabase (Authentication → Providers) avec l'ID client et le secret.
-2. **Auth → URL Configuration** : Site URL = URL de production ; Redirect URLs = `http://localhost:5173/**` + URL de production.
-3. **Vercel** : importer le dépôt (framework Vite), variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (Production + Preview) — valeurs dans `.env.local`. Aucun outil Vercel dans l'environnement.
-4. **OAuth iOS standalone** : à vérifier sur un iPhone après déploiement et à consigner dans `DECISIONS.md`.
-6. **Réseau de l'environnement cloud** : `*.supabase.co` est refusé par le proxy, donc aucun test en direct depuis la session (le MCP fonctionne). Pour en faire : Network access → autoriser `*.supabase.co`.
+2. **Supabase → Authentication → URL Configuration** : Site URL = `https://so-thu-chi-vietgolf.vercel.app` ; Redirect URLs = `http://localhost:5173/**` et `https://so-thu-chi-vietgolf.vercel.app/**`.
+3. **OAuth iOS standalone** : à vérifier sur un iPhone après déploiement et à consigner dans `DECISIONS.md`.
+4. **Réseau de l'environnement cloud** : `*.supabase.co` et `*.vercel.app` sont refusés par le proxy, donc aucun test en direct depuis la session (les MCP fonctionnent).
