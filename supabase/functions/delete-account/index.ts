@@ -9,7 +9,10 @@ const cors = {
 };
 
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'Content-Type': 'application/json' },
+  });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -18,9 +21,13 @@ Deno.serve(async (req) => {
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) return json({ error: 'unauthorized' }, 401);
 
-  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
 
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user) return json({ error: 'unauthorized' }, 401);

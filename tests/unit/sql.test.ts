@@ -1,13 +1,15 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { DEFAULT_CATEGORIES } from '../../src/sync/defaultCategories';
 
-const migration = readFileSync(
-  new URL('../../supabase/migrations/0001_init.sql', import.meta.url),
-  'utf8',
-);
+const migrationsDir = new URL('../../supabase/migrations/', import.meta.url);
+// Toutes les migrations, dans l'ordre des fichiers.
+const migrations = readdirSync(migrationsDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .map((f) => readFileSync(new URL(f, migrationsDir), 'utf8'));
 
 const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -49,7 +51,7 @@ beforeAll(async () => {
     grant usage on schema public, auth to anon, authenticated;
     grant execute on function auth.uid() to anon, authenticated;
   `);
-  await db.exec(migration);
+  for (const m of migrations) await db.exec(m);
   await db.exec(
     `insert into auth.users values ('${A}', '{"full_name":"Alice","avatar_url":"https://x/a.png"}'), ('${B}', '{}')`,
   );
@@ -269,5 +271,44 @@ describe('contraintes', () => {
       ]);
       expect(r.rows[0]?.n).toBe(0);
     }
+  });
+});
+
+describe('receipt_scans (quota des scans de factures)', () => {
+  const insertScan = (user: string, at: string) =>
+    db.query('insert into receipt_scans (user_id, created_at) values ($1, $2)', [user, at]);
+
+  it('chaque utilisateur ne lit que ses scans, sans pouvoir écrire', async () => {
+    await db.exec('reset role');
+    await insertScan(A, '2026-10-08T01:00:00Z'); // écriture « service » (rôle propriétaire)
+    await insertScan(A, '2026-10-08T02:00:00Z');
+    await as(A);
+    expect((await db.query('select * from receipt_scans')).rows).toHaveLength(2);
+    await expect(insertScan(A, '2026-10-08T03:00:00Z')).rejects.toThrow(/permission denied/);
+    await expect(db.query('update receipt_scans set created_at = now()')).rejects.toThrow(
+      /permission denied/,
+    );
+    await expect(db.query('delete from receipt_scans')).rejects.toThrow(/permission denied/);
+  });
+
+  it('un autre utilisateur ne voit rien ; l’accès anonyme est refusé', async () => {
+    await db.exec('reset role');
+    await db.exec(`insert into auth.users values ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', '{}')`);
+    await as('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+    expect((await db.query('select * from receipt_scans')).rows).toHaveLength(0);
+    await as(null);
+    await expect(db.query('select * from receipt_scans')).rejects.toThrow(/permission denied/);
+  });
+
+  it('ne contient que user_id et created_at, et disparaît avec le compte', async () => {
+    await db.exec('reset role');
+    const cols = await db.query<{ column_name: string }>(
+      `select column_name from information_schema.columns where table_name = 'receipt_scans' order by ordinal_position`,
+    );
+    expect(cols.rows.map((c) => c.column_name)).toEqual(['user_id', 'created_at']);
+    await db.query('delete from auth.users where id = $1', [A]);
+    expect(
+      (await db.query('select * from receipt_scans where user_id = $1', [A])).rows,
+    ).toHaveLength(0);
   });
 });

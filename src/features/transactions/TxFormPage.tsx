@@ -4,6 +4,8 @@ import { Calendar, PenLine, Pencil, Trash2 } from 'lucide-react';
 import { AmountKeypad } from '@/components/AmountKeypad';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
+import { ScanReceiptButton } from '@/features/scan/ScanReceiptButton';
+import type { Prefill } from '@/features/scan/normalize';
 import { Segmented } from '@/components/Segmented';
 import { useToast } from '@/components/Toast';
 import { useCategories, useTransaction } from '@/db/hooks';
@@ -67,6 +69,8 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
   const [date, setDate] = useState(init.date);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const expenseCategories = useCategories('expense');
 
   const activeQ = useCategories(type);
   const archivedQ = useCategories(type, true);
@@ -94,6 +98,16 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
     } catch {
       setError(vi.login.error);
     }
+  };
+
+  /** Scan raté ou douteux : saisie manuelle pré-remplie avec ce qui a été lu. */
+  const applyPrefill = (p: Prefill, message: string) => {
+    setType('expense');
+    setCategoryId(p.categoryId ?? null);
+    setExpr(p.amount ? String(p.amount) : '');
+    setNote(p.note);
+    setDate(p.date);
+    setScanMessage(message);
   };
 
   const openDate = () => {
@@ -144,6 +158,24 @@ function TxForm({ id, init }: { id: string | undefined; init: FormInit }) {
         className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 pt-5"
         style={{ paddingBottom: categoryId ? 460 : 16 }}
       >
+        {!editing && (
+          <div className="mb-5 px-1">
+            <ScanReceiptButton
+              categories={expenseCategories ?? []}
+              onManual={applyPrefill}
+              onDone={goBack}
+            />
+          </div>
+        )}
+        {scanMessage && (
+          <p
+            role="alert"
+            className="mx-1 mb-4 rounded-xl bg-[#FFF4E0] px-3 py-2.5 text-sm font-medium text-[#8A5A00]"
+            data-testid="scan-message"
+          >
+            {scanMessage}
+          </p>
+        )}
         <ul className="grid grid-cols-4 gap-x-1 gap-y-5">
           {categories.map((c) => {
             const isSelected = c.id === categoryId;
