@@ -5,12 +5,18 @@ import {
   extractOutputText,
   SYSTEM_PROMPT,
 } from '../../supabase/functions/scan-receipt/openai';
-import { DAILY_LIMIT, MAX_IMAGE_BYTES } from '../../supabase/functions/scan-receipt/validate';
+import {
+  DAILY_LIMIT,
+  MAX_IMAGE_BYTES,
+  type CategoryRef,
+} from '../../supabase/functions/scan-receipt/validate';
 
 const NOW = new Date('2026-10-08T05:00:00Z');
-const categories = [
-  { id: 'c-an', name: 'Ăn uống' },
-  { id: 'c-khac', name: 'Khác' },
+const categories: CategoryRef[] = [
+  { id: 'c-an', name: 'Ăn uống', type: 'expense' },
+  { id: 'c-khac', name: 'Khác', type: 'expense' },
+  { id: 'c-luong', name: 'Lương', type: 'income' },
+  { id: 'c-tnk', name: 'Thu nhập khác', type: 'income' },
 ];
 const IMG = Buffer.from('fake-jpeg-bytes').toString('base64');
 
@@ -35,6 +41,8 @@ function makeDeps(over: Partial<Deps> = {}): Deps & { calls: { fetch: number; re
         amount: 250000,
         date: '2026-10-07',
         category_id: 'c-an',
+        doc_kind: 'invoice',
+        tx_type: 'expense',
         merchant: 'Phở 24',
         vat_included: true,
         confidence: 0.92,
@@ -78,6 +86,8 @@ describe('scan-receipt : réponse valide', () => {
     expect(await res.json()).toEqual({
       ok: true,
       result: {
+        doc_kind: 'invoice',
+        tx_type: 'expense',
         amount: 250000,
         date: '2026-10-07',
         category_id: 'c-an',
@@ -114,6 +124,8 @@ describe('scan-receipt : réponse valide', () => {
     expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true });
     expect(body.text.format.schema.additionalProperties).toBe(false);
     expect(body.text.format.schema.required).toEqual([
+      'doc_kind',
+      'tx_type',
       'amount',
       'date',
       'category_id',
@@ -359,6 +371,157 @@ describe('prompt système', () => {
     });
     const res = await handleScan(request(valid), deps);
     expect(await res.json()).toMatchObject({ ok: true, result: { vat_included: false } });
+  });
+});
+
+describe('scan-receipt : notifications bancaires et e-wallet', () => {
+  const reply = (over: Record<string, unknown>) =>
+    makeDeps({
+      fetchOpenAI: async () =>
+        openAiReply({
+          doc_kind: 'bank_notification',
+          tx_type: 'income',
+          amount: 3500000,
+          date: '2026-10-07',
+          category_id: 'c-tnk',
+          merchant: 'CAO MINH NHAN - Chuyen tien',
+          vat_included: null,
+          confidence: 0.93,
+          ...over,
+        }),
+    });
+
+  it('SMS NamABank « nop 3.500.000VND » : revenu 3 500 000 au 07/10/2026, note sans numéro de compte', async () => {
+    const res = await handleScan(request(valid), reply({}));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { result: Record<string, unknown> };
+    expect(body.result).toMatchObject({
+      doc_kind: 'bank_notification',
+      tx_type: 'income',
+      amount: 3500000, // et non le solde 3.617.661
+      date: '2026-10-07',
+      category_id: 'c-tnk',
+      merchant: 'CAO MINH NHAN - Chuyen tien',
+    });
+    expect(String(body.result.merchant)).not.toMatch(/4010|0007/);
+  });
+
+  it('SMS de débit : dépense avec une catégorie de dépense', async () => {
+    const res = await handleScan(
+      request(valid),
+      reply({
+        tx_type: 'expense',
+        amount: 250000,
+        category_id: 'c-khac',
+        merchant: 'Thanh toan GRAB',
+      }),
+    );
+    expect(await res.json()).toMatchObject({
+      ok: true,
+      result: { tx_type: 'expense', amount: 250000, category_id: 'c-khac' },
+    });
+  });
+
+  it('capture MoMo de paiement : dépense', async () => {
+    const res = await handleScan(
+      request(valid),
+      reply({
+        tx_type: 'expense',
+        amount: 89000,
+        category_id: 'c-an',
+        merchant: 'MoMo - Highlands',
+      }),
+    );
+    expect(await res.json()).toMatchObject({
+      ok: true,
+      result: { doc_kind: 'bank_notification', tx_type: 'expense', amount: 89000 },
+    });
+  });
+
+  it('plusieurs transactions (doc_kind « other ») → 422, rien à enregistrer, scan quand même compté', async () => {
+    const deps = reply({ doc_kind: 'other', amount: 0, confidence: 0, category_id: 'c-khac' });
+    const res = await handleScan(request(valid), deps);
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: 'unreadable' });
+    expect(deps.calls.recorded).toBe(1);
+  });
+
+  it('« other » avec un montant et une confiance élevés est quand même refusé', async () => {
+    const res = await handleScan(request(valid), reply({ doc_kind: 'other', confidence: 0.99 }));
+    expect(res.status).toBe(422);
+  });
+
+  it('solde recopié à la place du virement : la fonction ne le devine pas, c’est le prompt qui l’interdit', () => {
+    expect(SYSTEM_PROMPT).toMatch(/NEVER the balance/);
+    expect(SYSTEM_PROMPT).toMatch(/So du/);
+  });
+
+  it('un client sans types de catégories (ancienne version) reste servi : tout est « expense »', async () => {
+    const legacy = {
+      ...valid,
+      categories: [
+        { id: 'c-an', name: 'Ăn uống' },
+        { id: 'c-khac', name: 'Khác' },
+      ],
+    };
+    const deps = makeDeps();
+    const res = await handleScan(request(legacy), deps);
+    expect(res.status).toBe(200);
+  });
+
+  it('type de catégorie invalide → 400', async () => {
+    const bad = { ...valid, categories: [{ id: 'a', name: 'A', type: 'autre' }] };
+    expect((await handleScan(request(bad), makeDeps())).status).toBe(400);
+  });
+
+  it('envoie les DEUX listes de catégories (dépense et revenu) à OpenAI', async () => {
+    const seen: string[] = [];
+    const deps = makeDeps({
+      fetchOpenAI: async (_u, init) => {
+        seen.push(String(init.body));
+        return openAiReply({
+          doc_kind: 'invoice',
+          tx_type: 'expense',
+          amount: 1000,
+          date: null,
+          category_id: 'c-an',
+          merchant: null,
+          vat_included: null,
+          confidence: 0.9,
+        });
+      },
+    });
+    await handleScan(request(valid), deps);
+    const text: string = JSON.parse(seen[0] ?? '{}').input[1].content[0].text;
+    expect(text).toContain('Expense categories (id: name):\n- c-an: Ăn uống\n- c-khac: Khác');
+    expect(text).toContain(
+      'Income categories (id: name):\n- c-luong: Lương\n- c-tnk: Thu nhập khác',
+    );
+  });
+
+  it('schéma : doc_kind et tx_type en énumérations strictes', () => {
+    const b = buildRequestBody({ model: 'm', imageDataUrl: 'data:x', categories });
+    const props = (b.text as { format: { schema: { properties: Record<string, unknown> } } }).format
+      .schema.properties;
+    expect(props.doc_kind).toEqual({
+      type: 'string',
+      enum: ['invoice', 'bank_notification', 'other'],
+    });
+    expect(props.tx_type).toEqual({ type: 'string', enum: ['expense', 'income'] });
+  });
+
+  it('le prompt donne le sens, le montant, la note, la catégorie et le cas « other »', () => {
+    expect(SYSTEM_PROMPT).toMatch(/"nop"/);
+    expect(SYSTEM_PROMPT).toMatch(/"ghi có"/);
+    expect(SYSTEM_PROMPT).toMatch(/"rút"/);
+    expect(SYSTEM_PROMPT).toMatch(/"ghi nợ"/);
+    expect(SYSTEM_PROMPT).toMatch(/Số dư/);
+    expect(SYSTEM_PROMPT).toMatch(/ND \/ Nội dung/);
+    expect(SYSTEM_PROMPT).toMatch(/NEVER put an account number, card number or phone number/);
+    expect(SYSTEM_PROMPT).toMatch(/"Lương"/);
+    expect(SYSTEM_PROMPT).toMatch(/"Thu nhập khác"/);
+    expect(SYSTEM_PROMPT).toMatch(/SEVERAL transactions/);
+    expect(SYSTEM_PROMPT).toMatch(/An invoice is always "expense"/);
   });
 });
 

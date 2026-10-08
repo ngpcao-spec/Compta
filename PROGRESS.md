@@ -42,6 +42,8 @@ Contrôles : `npm run check` (74 tests) · `npm run e2e` (26 tests) · `npm run 
 
 - **Correctif scan (TVA / catégorie / note)** d'après la facture MM Mega Market : `vat_included` dans le schéma, préfixe `(chưa VAT)` + toast d'avertissement, catégorie d'après les articles, note de repli (n° de facture, type d'achat). Edge Function redéployée (v3). PR vers `main` non fusionnée ; à confirmer en rescannant la facture réelle. Détails dans `DECISIONS.md`.
 
+- **Scan des notifications bancaires / e-wallet** (SMS de banque, MoMo…) : revenu ou dépense selon le sens détecté (prime sur l'onglet), `doc_kind`/`tx_type` dans le schéma, catégories des deux types, montant = transaction (jamais le solde), note sans numéro de compte, `other`/plusieurs transactions → rien d'enregistré. Edge Function redéployée (v4). PR vers `main` non fusionnée ; à confirmer en rescannant le SMS NamABank. Détails dans `DECISIONS.md`.
+
 ## Vérifié en production (https://so-thu-chi-vietgolf.vercel.app, projet Supabase `Compta`)
 
 - Connexion Google (client OAuth dédié « Sổ Thu Chi ») : OK sur iPhone ; création automatique du profil + 35 dépenses + 5 revenus.

@@ -14,7 +14,7 @@ import { defaultScanDeps, scanReceipt } from './scanReceipt';
 import { useOnline } from './useOnline';
 
 interface Props {
-  /** catégories de dépense actives (id + nom sont envoyés à la fonction) */
+  /** catégories actives de dépense ET de revenu (id, nom et type sont envoyés à la fonction) */
   categories: readonly Category[];
   /** échec ou doute : ouvrir la saisie manuelle pré-remplie, avec ce message */
   onManual: (prefill: Prefill, message: string) => void;
@@ -52,7 +52,7 @@ export function ScanReceiptButton({ categories, onManual, onError, onDone }: Pro
     const ctrl = new AbortController();
     abort.current = ctrl;
     setBusy(true);
-    const refs = categories.map((c) => ({ id: c.id, name: c.name }));
+    const refs = categories.map((c) => ({ id: c.id, name: c.name, type: c.type }));
     const out = await scanReceipt(file, refs, todayStr(), ctrl.signal, defaultScanDeps(invokeScan));
     abort.current = null;
     setBusy(false);
@@ -79,7 +79,12 @@ export function ScanReceiptButton({ categories, onManual, onError, onDone }: Pro
         occurredOn: d.date,
       });
       const name = categories.find((c) => c.id === d.categoryId)?.name ?? '';
-      const message = d.vatExcluded ? vi.scan.addedNoVat : vi.scan.added;
+      const message =
+        d.txType === 'income'
+          ? vi.scan.addedIncome
+          : d.vatExcluded
+            ? vi.scan.addedNoVat
+            : vi.scan.added;
       toast(message(amountText(d.amount), name), {
         label: vi.scan.edit,
         onClick: () => void navigate(`/tx/${tx.id}`),

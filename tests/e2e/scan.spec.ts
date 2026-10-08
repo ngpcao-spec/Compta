@@ -9,6 +9,8 @@ const PNG_1X1 = Buffer.from(
 
 type FakeScan = {
   kind: 'ok' | 'error' | 'quota';
+  docKind?: 'invoice' | 'bank_notification' | 'other';
+  txType?: 'expense' | 'income';
   delayMs?: number;
   amount?: number;
   date?: string | null;
@@ -185,6 +187,133 @@ test.describe('scanner une facture', () => {
     await expect(page.getByTestId('tx-row')).not.toContainText('chưa VAT');
   });
 
+  test('SMS NamABank « nop 3.500.000VND » scanné depuis l’onglet Chi tiêu : un REVENU est enregistré', async ({
+    page,
+  }) => {
+    // « NamABank: TK 4010…0007 nop 3.500.000VND luc 21:36 07/10/2026. So du 3.617.661VND. ND: CAO MINH NHAN Chuyen tien »
+    await arm(page, {
+      kind: 'ok',
+      docKind: 'bank_notification',
+      txType: 'income',
+      amount: 3500000,
+      categoryName: 'Thu nhập khác',
+      date: '2026-01-02',
+      merchant: 'CAO MINH NHAN - Chuyen tien',
+      confidence: 0.93,
+    });
+    await expect(page.getByRole('tab', { name: 'Chi tiêu' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await scan(page, 'library');
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Đã thêm thu nhập 3,500,000 vào Thu nhập khác' }),
+    ).toBeVisible();
+    const row = page.getByTestId('tx-row');
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText('Thu nhập khác');
+    await expect(row).toContainText('3,500,000');
+    await expect(row).not.toContainText('-3,500,000'); // revenu : pas de signe moins
+    await expect(row).toContainText('CAO MINH NHAN - Chuyen tien');
+    await expect(row).not.toContainText(/4010|0007/);
+    // « Sửa » ouvre la transaction, sur l'onglet Thu nhập
+    await page.getByTestId('toast-action').click();
+    await expect(page).toHaveURL(/\/tx\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole('tab', { name: 'Thu nhập' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByTestId('amount-display')).toHaveText('3,500,000');
+  });
+
+  test('SMS de débit : une dépense, toast habituel', async ({ page }) => {
+    await arm(page, {
+      kind: 'ok',
+      docKind: 'bank_notification',
+      txType: 'expense',
+      amount: 250000,
+      categoryName: 'Khác',
+      merchant: 'Thanh toan GRAB',
+      confidence: 0.9,
+    });
+    await scan(page);
+    await expect(
+      page.getByRole('status').filter({ hasText: /^Đã thêm 250,000 vào Khác/ }),
+    ).toBeVisible();
+    await expect(page.getByTestId('tx-row')).toContainText('-250,000');
+  });
+
+  test('capture MoMo de paiement lue depuis la bibliothèque : dépense', async ({ page }) => {
+    await arm(page, {
+      kind: 'ok',
+      docKind: 'bank_notification',
+      txType: 'expense',
+      amount: 89000,
+      categoryName: 'Ăn uống',
+      merchant: 'MoMo - Highlands Coffee',
+      confidence: 0.88,
+    });
+    await scan(page, 'library');
+    await expect(page.getByTestId('tx-row')).toContainText('-89,000');
+    await expect(page.getByTestId('tx-row')).toContainText('MoMo - Highlands Coffee');
+  });
+
+  test('onglet Thu nhập : les deux boutons y sont et un revenu y est enregistré', async ({
+    page,
+  }) => {
+    await page.getByRole('tab', { name: 'Thu nhập' }).click();
+    await expect(page.getByTestId('scan-camera')).toBeVisible();
+    await expect(page.getByTestId('scan-library')).toBeVisible();
+    await expect(page.getByTestId('scan-camera')).toBeEnabled();
+    await arm(page, {
+      kind: 'ok',
+      docKind: 'bank_notification',
+      txType: 'income',
+      amount: 15000000,
+      categoryName: 'Lương',
+      merchant: 'CONG TY ABC - Luong thang 9',
+      confidence: 0.95,
+    });
+    await scan(page, 'library');
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Đã thêm thu nhập 15,000,000 vào Lương' }),
+    ).toBeVisible();
+    await expect(page.getByTestId('tx-row').filter({ hasText: 'Lương' })).toContainText(
+      '15,000,000',
+    );
+  });
+
+  test('la nature détectée prime aussi dans l’autre sens : facture scannée depuis Thu nhập → dépense', async ({
+    page,
+  }) => {
+    await page.getByRole('tab', { name: 'Thu nhập' }).click();
+    await arm(page, { ...OK_SCAN, date: '2026-01-02' });
+    await scan(page);
+    await expect(
+      page.getByRole('status').filter({ hasText: /^Đã thêm 250,000 vào Ăn uống/ }),
+    ).toBeVisible();
+    await expect(page.getByTestId('tx-row')).toContainText('-250,000');
+  });
+
+  test('message avec plusieurs transactions : rien d’enregistré, message d’échec, saisie vide', async ({
+    page,
+  }) => {
+    await arm(page, {
+      kind: 'ok',
+      docKind: 'other',
+      txType: 'expense',
+      amount: 0,
+      confidence: 0,
+    });
+    await scan(page, 'library');
+    await expect(page.getByTestId('scan-message')).toHaveText(
+      'Không đọc được hóa đơn hoặc giao dịch, vui lòng kiểm tra',
+    );
+    await expect(page.getByTestId('amount-display')).toHaveCount(0); // aucune catégorie présélectionnée
+    await page.getByRole('button', { name: 'Hủy' }).click();
+    await expect(page.getByTestId('empty-state')).toBeVisible();
+  });
+
   test('date absente → aujourd’hui ; marchand tronqué à 100 caractères', async ({ page }) => {
     await arm(page, {
       kind: 'ok',
@@ -206,7 +335,7 @@ test.describe('scanner une facture', () => {
     await arm(page, { kind: 'error' });
     await scan(page);
     await expect(page.getByTestId('scan-message')).toHaveText(
-      'Không đọc được hóa đơn, vui lòng kiểm tra',
+      'Không đọc được hóa đơn hoặc giao dịch, vui lòng kiểm tra',
     );
     await expect(page).toHaveURL(/\/tx\/new/);
     await page.getByRole('button', { name: 'Hủy' }).click();

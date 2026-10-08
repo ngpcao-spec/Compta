@@ -8,6 +8,8 @@ import type { InvokeResult, ScanPayload } from './scanReceipt';
 export async function fakeScan(payload: ScanPayload, signal: AbortSignal): Promise<InvokeResult> {
   const cfg = JSON.parse(localStorage.getItem('stc.e2e.scan') ?? '{"kind":"error"}') as {
     kind: 'ok' | 'error' | 'quota';
+    docKind?: 'invoice' | 'bank_notification' | 'other';
+    txType?: 'expense' | 'income';
     delayMs?: number;
     amount?: number;
     date?: string | null;
@@ -33,10 +35,15 @@ export async function fakeScan(payload: ScanPayload, signal: AbortSignal): Promi
   );
   if (cfg.kind === 'quota') return { ok: false, error: 'quota_exceeded' };
   if (cfg.kind === 'error') return { ok: false, error: 'upstream_error' };
-  const cat = payload.categories.find((c) => c.name === cfg.categoryName) ?? payload.categories[0];
+  const type = cfg.txType ?? 'expense';
+  const cat =
+    payload.categories.find((c) => c.name === cfg.categoryName && c.type === type) ??
+    payload.categories.find((c) => c.type === type);
   return {
     ok: true,
     result: {
+      doc_kind: cfg.docKind ?? 'invoice',
+      tx_type: type,
       amount: cfg.amount ?? 0,
       date: cfg.date ?? null,
       category_id: cat?.id ?? '',
