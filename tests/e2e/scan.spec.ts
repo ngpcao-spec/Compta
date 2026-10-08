@@ -14,6 +14,7 @@ type FakeScan = {
   date?: string | null;
   categoryName?: string;
   merchant?: string | null;
+  vatIncluded?: boolean | null;
   confidence?: number;
 };
 
@@ -147,6 +148,41 @@ test.describe('scanner une facture', () => {
       'aria-pressed',
       'true',
     );
+  });
+
+  test('montant hors TVA : note préfixée « (chưa VAT) » et toast d’avertissement avec « Sửa »', async ({
+    page,
+  }) => {
+    await arm(page, {
+      kind: 'ok',
+      amount: 1020331,
+      categoryName: 'Ăn uống',
+      date: '2026-01-02',
+      merchant: 'HĐ #ISR06000025498',
+      vatIncluded: false,
+      confidence: 0.85,
+    });
+    await scan(page, 'library');
+    await expect(
+      page
+        .getByRole('status')
+        .filter({ hasText: 'Đã thêm 1,020,331 vào Ăn uống — số tiền chưa gồm VAT, kiểm tra lại' }),
+    ).toBeVisible();
+    const row = page.getByTestId('tx-row');
+    await expect(row).toContainText('(chưa VAT) HĐ #ISR06000025498');
+    await expect(row).toContainText('-1,020,331');
+    await page.getByTestId('toast-action').click();
+    await expect(page.getByLabel('Ghi chú')).toHaveValue('(chưa VAT) HĐ #ISR06000025498');
+  });
+
+  test('facture TTC : toast normal, note sans préfixe', async ({ page }) => {
+    await arm(page, { ...OK_SCAN, merchant: 'Co.opmart', vatIncluded: true, date: '2026-01-02' });
+    await scan(page);
+    await expect(
+      page.getByRole('status').filter({ hasText: /^Đã thêm 250,000 vào Ăn uống/ }),
+    ).not.toContainText('VAT');
+    await expect(page.getByTestId('tx-row')).toContainText('Co.opmart');
+    await expect(page.getByTestId('tx-row')).not.toContainText('chưa VAT');
   });
 
   test('date absente → aujourd’hui ; marchand tronqué à 100 caractères', async ({ page }) => {

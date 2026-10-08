@@ -12,6 +12,7 @@ const raw = (over: Record<string, unknown> = {}) => ({
   date: '2026-10-05',
   category_id: 'c-an',
   merchant: 'Highlands Coffee',
+  vat_included: true,
   confidence: 0.9,
   ...over,
 });
@@ -25,9 +26,60 @@ describe('interpretScan', () => {
         date: '2026-10-05',
         categoryId: 'c-an',
         note: 'Highlands Coffee',
+        vatExcluded: false,
         confidence: 0.9,
       },
     });
+  });
+
+  it('facture MM Mega Market hors TVA : Ăn uống, préfixe (chưa VAT) et numéro de facture en note', () => {
+    const r = interpretScan(
+      raw({
+        amount: 1020331,
+        date: null,
+        category_id: 'c-an', // fromages, lait… l'IA choisit selon les articles
+        merchant: 'HĐ #ISR06000025498',
+        vat_included: false,
+        confidence: 0.85,
+      }),
+      cats,
+      TODAY,
+    );
+    expect(r).toEqual({
+      kind: 'ready',
+      draft: {
+        amount: 1020331,
+        date: TODAY,
+        categoryId: 'c-an',
+        note: '(chưa VAT) HĐ #ISR06000025498',
+        vatExcluded: true,
+        confidence: 0.85,
+      },
+    });
+  });
+
+  it('facture TTC classique : aucun préfixe, pas d’avertissement TVA', () => {
+    const r = interpretScan(raw({ vat_included: true, merchant: 'Co.opmart' }), cats, TODAY);
+    expect(r.kind === 'ready' && r.draft.note).toBe('Co.opmart');
+    expect(r.kind === 'ready' && r.draft.vatExcluded).toBe(false);
+  });
+
+  it('TVA non mentionnée (null) : traité comme TTC, sans préfixe', () => {
+    const r = interpretScan(raw({ vat_included: null }), cats, TODAY);
+    expect(r.kind === 'ready' && r.draft.note).toBe('Highlands Coffee');
+    expect(r.kind === 'ready' && r.draft.vatExcluded).toBe(false);
+  });
+
+  it('hors TVA sans libellé : la note est juste le préfixe ; total borné à 100 caractères', () => {
+    const none = interpretScan(raw({ vat_included: false, merchant: null }), cats, TODAY);
+    expect(none.kind === 'ready' && none.draft.note).toBe('(chưa VAT)');
+    const long = interpretScan(
+      raw({ vat_included: false, merchant: 'M'.repeat(250) }),
+      cats,
+      TODAY,
+    );
+    expect(long.kind === 'ready' && long.draft.note).toHaveLength(100);
+    expect(long.kind === 'ready' && long.draft.note.startsWith('(chưa VAT) M')).toBe(true);
   });
 
   it('date null, future ou trop ancienne → aujourd’hui', () => {

@@ -79,7 +79,8 @@ export function ScanReceiptButton({ categories, onManual, onError, onDone }: Pro
         occurredOn: d.date,
       });
       const name = categories.find((c) => c.id === d.categoryId)?.name ?? '';
-      toast(vi.scan.added(amountText(d.amount), name), {
+      const message = d.vatExcluded ? vi.scan.addedNoVat : vi.scan.added;
+      toast(message(amountText(d.amount), name), {
         label: vi.scan.edit,
         onClick: () => void navigate(`/tx/${tx.id}`),
       });

@@ -101,3 +101,14 @@ Contexte : nouvelle fonctionnalité (SPEC §3.10), exception autorisée à la r�
 - **Orientation EXIF** : le décodage demande `imageOrientation: 'from-image'` ; en plus, un petit lecteur d'EXIF JPEG (`readJpegInfo`) détecte le cas où le décodeur a ignoré une orientation 5–8 (dimensions décodées = dimensions stockées, image non carrée) et redresse à la main via une matrice de canvas. Les orientations 2–4 gardent les dimensions : on se fie au navigateur.
 - **Grandes images** : le décodage se fait une fois, le canvas est directement à la taille finale (côté long 1600 px) ; au-delà de 60 Mo le fichier est refusé avant décodage (sécurité mémoire du téléphone), avec le même message.
 - **Captures PNG** : fond blanc avant le JPEG (pas de transparence), ratio conservé (testé sur une image 800×3000).
+
+## 2026-10-08 — Scan : TVA, catégorie selon les articles, note de repli
+
+Constat sur une vraie facture (MM Mega Market, « Thành tiền 1.020.331đ — chưa bao gồm VAT », 8 articles alimentaires) : montant correct mais catégorie « Mua sắm » et note vide.
+
+- **`vat_included: boolean | null`** ajouté au schéma strict (et à `ScanResult`). `true` = total TTC lu ; `false` = la facture dit explicitement « chưa bao gồm VAT » sans total TTC ; `null` = non mentionné. Valeur non booléenne renvoyée par l'IA → `null`. Le prompt interdit d'inventer ou de calculer une TVA : on ne corrige jamais le montant.
+- **Côté client** : `vat_included === false` → note préfixée `(chưa VAT) ` (le tout reste ≤ 100 caractères, le préfixe est conservé) et toast « Đã thêm … — số tiền chưa gồm VAT, kiểm tra lại » avec `Sửa`. `true` et `null` se comportent comme avant (pas d'avertissement). Le préfixe n'est appliqué qu'à l'enregistrement direct ; en saisie manuelle (confiance < 0,5) l'utilisateur vérifie de toute façon le montant.
+- **Catégorie** : le prompt demande de décider d'après les articles, en cumulant les montants par catégorie, l'alimentaire (y compris courses de supermarché/grossiste) allant en « Ăn uống » et « Mua sắm » étant réservé aux achats non alimentaires dominants ; capture tronquée → on décide sur les lignes visibles. C'est une consigne au modèle : elle n'est pas vérifiable sans appel réel (voir ci-dessous).
+- **Note** : le champ `merchant` du schéma est conservé (compatibilité avec la fonction déployée et les tests) mais sert de libellé de note : commerçant visible, sinon numéro de facture, sinon type d'achat, sinon `null`.
+- **Limite des tests** : aucun appel OpenAI n'est possible depuis la session. Les tests vérifient le contenu du prompt, le schéma, la validation serveur et la normalisation client sur une réponse simulée qui reproduit cette facture ; le choix réel de la catégorie par le modèle est à confirmer en rescannant la facture MM Mega Market.
+

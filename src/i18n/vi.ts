@@ -79,6 +79,8 @@ export const vi = {
     reading: 'Đang đọc hóa đơn…',
     cancel: 'Hủy',
     added: (amount: string, category: string) => `Đã thêm ${amount} vào ${category}`,
+    addedNoVat: (amount: string, category: string) =>
+      `Đã thêm ${amount} vào ${category} — số tiền chưa gồm VAT, kiểm tra lại`,
     edit: 'Sửa',
     failed: 'Không đọc được hóa đơn, vui lòng kiểm tra',
     quota: (n: number) => `Đã hết ${n} lượt quét hôm nay. Vui lòng nhập thủ công.`,

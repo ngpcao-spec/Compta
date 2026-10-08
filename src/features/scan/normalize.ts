@@ -1,5 +1,6 @@
 import {
   CONFIDENCE_MIN,
+  NO_VAT_PREFIX,
   MERCHANT_MAX,
   normalizeAmount,
   normalizeDate,
@@ -14,8 +15,10 @@ export interface Draft {
   /** YYYY-MM-DD ; aujourd'hui si la facture n'en donne pas */
   date: string;
   categoryId: string;
-  /** nom du marchand, ≤ 100 caractères */
+  /** note ≤ 100 caractères : (chưa VAT) éventuel + commerçant / n° de facture / type d'achat */
   note: string;
+  /** la facture indique explicitement que le montant est hors TVA */
+  vatExcluded: boolean;
   confidence: number;
 }
 
@@ -28,6 +31,13 @@ export interface Prefill {
 }
 
 export type Interpretation = { kind: 'ready'; draft: Draft } | { kind: 'manual'; prefill: Prefill };
+
+/** Note de la dépense : « (chưa VAT) » devant le libellé quand le montant est hors TVA. */
+function buildNote(label: string | null, vatExcluded: boolean): string {
+  const base = label ?? '';
+  const note = vatExcluded ? `${NO_VAT_PREFIX} ${base}`.trim() : base;
+  return note.slice(0, MERCHANT_MAX);
+}
 
 /**
  * Seconde validation côté client (la fonction a déjà validé) : montant, catégorie de dépense
@@ -47,7 +57,8 @@ export function interpretScan(
         amount: result.amount,
         date: result.date ?? today,
         categoryId: result.category_id,
-        note: (result.merchant ?? '').slice(0, MERCHANT_MAX),
+        note: buildNote(result.merchant, result.vat_included === false),
+        vatExcluded: result.vat_included === false,
         confidence: result.confidence,
       },
     };
